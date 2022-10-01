@@ -5,6 +5,10 @@
 
 struct tree_t
 {
+    struct tree_t *left;
+    struct tree_t *right;
+    char *key;
+    struct data_t *value;
 };
 
 #endif
