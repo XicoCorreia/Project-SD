@@ -1,0 +1,10 @@
+# Executables
+binary/*
+!binary/.gitkeep
+
+# Object files
+object/*
+!object/.gitkeep
+
+# VSCode settings
+.vscode/*
