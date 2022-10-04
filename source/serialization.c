@@ -5,29 +5,40 @@
 
 int keyArray_to_buffer(char **keys, char **keys_buf)
 {
-    int i;
-    int size = 0;
+    int i, size;
+    for (i = 0, size = sizeof(int); keys[i] != NULL; i++)
+    {
+        size += sizeof(int) + strlen(keys[i]) + 1;
+    }
+    *keys_buf = (char *)malloc(size);
+    memcpy(*keys_buf, &i, sizeof(int));
+
+    char *keys_buf_ptr = *keys_buf + sizeof(int);
     for (i = 0; keys[i] != NULL; i++)
     {
-        size += strlen(keys[i]) + 1; // incluir '\0' de fim de string
+        int keylen = strlen(keys[i]) + 1;
+        memcpy(keys_buf_ptr, &keylen, sizeof(int));
+        keys_buf_ptr += sizeof(int);
+        strcpy(keys_buf_ptr, keys[i]);
+        keys_buf_ptr += keylen;
     }
-    *keys_buf = (char *)malloc(sizeof(int) + size);
-    memcpy(*keys_buf, &i, sizeof(int)); // nº de elementos no inicio do buf
-    memcpy(*keys_buf + sizeof(int), *keys, size);
-    return i;
+    return size;
 }
 
 char **buffer_to_keyArray(char *keys_buf, int keys_buf_size)
 {
-    char **keys = (char **)malloc(keys_buf_size * sizeof(char *));
-    int size = 0;
-    for (int i = 0; i < keys_buf_size; i++)
+    int n = *keys_buf;
+    keys_buf += sizeof(int);
+    char **keys = (char **)malloc((n + 1) * sizeof(char *));
+    for (int i = 0; i < n; i++)
     {
-        size = strlen(keys_buf) + 1;
-        keys[i] = (char *)malloc(strlen(keys_buf) + 1);
+        int keylen = (int)*keys_buf;
+        keys_buf += sizeof(int);
+        keys[i] = (char *)malloc(keylen);
         strcpy(keys[i], keys_buf);
-        keys_buf += size;
+        keys_buf += keylen;
     }
+    keys[n] = NULL;
     return keys;
 }
 
@@ -65,8 +76,17 @@ int main(int argc, char const *argv[])
     printf("Tamanho do buffer serializado: %d\n", keys_buf_size);
 
     // DE-SERIALIZAR
-    char **final_keys = buffer_to_keyArray(*(keys_buf) + sizeof(int), keys_buf_size);
+    char **final_keys = buffer_to_keyArray(*keys_buf, keys_buf_size);
     printf("Array de chaves de-serializado: ");
     print_str_array(final_keys);
+
+    // CLEANUP
+    free(*keys_buf);
+    free(keys_buf);
+    for (int i = 0; final_keys[i] != NULL; i++)
+    {
+        free(final_keys[i]);
+    }
+    free(final_keys);
     return 0;
 }
