@@ -39,25 +39,25 @@ struct entry_t *entry_dup(struct entry_t *entry)
 {
     if (entry == NULL)
         return NULL;
-    struct entry_t *entry_dup = malloc(sizeof(struct entry_t));
+    struct entry_t *dup = malloc(sizeof(struct entry_t));
 
-    if (entry_dup == NULL)
+    if (dup == NULL)
     {
         perror("entry_dup");
         exit(1);
     }
-    entry_dup->key = malloc(strlen(entry->key) + 1);
+    dup->key = malloc(strlen(entry->key) + 1);
 
-    if (entry_dup->key == NULL)
+    if (dup->key == NULL)
     {
         perror("entry_dup");
         exit(1);
     }
-    strcpy(entry_dup->key, entry->key);
+    strcpy(dup->key, entry->key);
 
-    entry_dup->value = data_dup(entry->value);
+    dup->value = data_dup(entry->value);
 
-    return entry_dup;
+    return dup;
 }
 
 void entry_replace(struct entry_t *entry, char *new_key, struct data_t *new_value)
@@ -73,6 +73,12 @@ void entry_replace(struct entry_t *entry, char *new_key, struct data_t *new_valu
 
 int entry_compare(struct entry_t *entry1, struct entry_t *entry2)
 {
+    if (entry1 == NULL || entry2 == NULL || entry1->key == NULL || entry2->key == NULL)
+    {
+        perror("entry_compare");
+        exit(-1);
+    }
+
     int comp = strcmp(entry1->key, entry2->key);
 
     if (comp == 0)

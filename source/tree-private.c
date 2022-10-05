@@ -47,3 +47,54 @@ void inorder_values(struct tree_t *tree, void **values, int *count)
         inorder_values(tree->right, values, count);
     }
 }
+
+struct tree_t *tree_del_aux(struct tree_t *tree, char *key)
+{
+    if (tree == NULL)
+        return NULL;
+    if (tree->entry == NULL)
+        return tree;
+
+    int cmp = strcmp(key, tree->entry->key);
+
+    if (cmp < 0)
+    {
+        tree->left = tree_del_aux(tree->left, key);
+    }
+    else if (cmp > 0)
+    {
+        tree->right = tree_del_aux(tree->right, key);
+    }
+    else
+    {
+        struct tree_t *temp;
+        if (tree->left == NULL)
+        {
+            temp = tree->right;
+            return temp;
+        }
+        else if (tree->right == NULL)
+        {
+            temp = tree->left;
+            return temp;
+        }
+
+        temp = inorder_successor(tree->right);
+        tree->entry = temp->entry;
+        tree->right = tree_del_aux(tree->right, temp->entry->key);
+    }
+    return tree;
+}
+
+struct tree_t *inorder_successor(struct tree_t *tree)
+{
+    if (tree == NULL)
+    {
+        return NULL;
+    }
+    while (tree->left != NULL)
+    {
+        tree = tree->left;
+    }
+    return tree;
+}

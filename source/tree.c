@@ -87,8 +87,9 @@ struct data_t *tree_get(struct tree_t *tree, char *key)
 
 int tree_del(struct tree_t *tree, char *key)
 {
-    // TODO
-    return 1;
+    int size = tree_size(tree);
+    tree_del_aux(tree, key);
+    return size - tree_size(tree) - 1;
 }
 
 int tree_size(struct tree_t *tree)
