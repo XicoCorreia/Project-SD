@@ -21,8 +21,10 @@ test_entry.o = data.h entry.h data.h
 test_tree.o = data.h entry.h tree.h
 test_serialization.o = serialization.h
 
+# -std deve ser gnu99 ou superior para usar strdup
+# em Ubuntu 22.04 (ambiente de labs), o gcc 11 usa -std=gnu++17
 CC = gcc
-CFLAGS = -g -Wall -I $(INC_DIR)
+CFLAGS = -std=gnu99 -g -Wall -I $(INC_DIR)
 LIBS =
 
 vpath %.o $(OBJ_DIR)

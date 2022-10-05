@@ -12,12 +12,17 @@
 
 int keyArray_to_buffer(char **keys, char **keys_buf)
 {
+    if (keys == NULL || keys_buf == NULL)
+        return -1;
+
     int keys_buf_size = 0;
     for (int i = 0; keys[i] != NULL; i++)
     {
         keys_buf_size += sizeof(int) + strlen(keys[i]) + 1;
     }
     *keys_buf = malloc(keys_buf_size);
+    if (*keys_buf == NULL)
+        return -1;
 
     keys_buf_size = 0;
     for (int i = 0; keys[i] != NULL; i++)
