@@ -24,7 +24,7 @@ struct data_t *data_create(int size)
 struct data_t *data_create2(int size, void *data)
 {
     struct data_t *new_data = malloc(sizeof(struct data_t));
-    if (new_data->data == NULL)
+    if (new_data == NULL)
     {
         perror("data_create2");
         exit(1);

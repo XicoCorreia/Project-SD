@@ -7,7 +7,8 @@ BIN_DIR = binary
 INC_DIR = include
 OBJ_DIR = object
 SRC_DIR = source
-OBJECTS = data.o entry.o serialization.o tree-private.o tree.o test_data.o test_entry.o test_tree.o
+OBJECTS = data.o entry.o serialization.o tree-private.o tree.o
+TESTS = test_data.o test_entry.o test_tree.o
 
 data.o = data.h
 entry.o = entry.h data.h
@@ -25,11 +26,10 @@ LIBS =
 
 vpath %.o $(OBJ_DIR)
 
-out: $(OBJECTS)
-	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS)) -o $(BIN_DIR)/test_data $(LIBS)
-	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS)) -o $(BIN_DIR)/test_entry $(LIBS)
-	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS)) -o $(BIN_DIR)/test_tree $(LIBS)
-	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS)) -o $(BIN_DIR)/test_serialization $(LIBS)
+tests: $(OBJECTS) $(TESTS)
+	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) test_data.o) -o $(BIN_DIR)/test_data $(LIBS)
+	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) test_entry.o) -o $(BIN_DIR)/test_entry $(LIBS)
+	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) test_tree.o) -o $(BIN_DIR)/test_tree $(LIBS)
 
 %.o: $(SRC_DIR)/%.c $($@)
 	$(CC) $(CFLAGS) -o $(OBJ_DIR)/$@ -c $<
