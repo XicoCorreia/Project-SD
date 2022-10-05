@@ -9,7 +9,7 @@ struct entry_t *entry_create(char *key, struct data_t *data)
 
     if (entry == NULL)
     {
-        printf("Erro ao alocar a mem贸ria.");
+        perror("entry_create");
         exit(1);
     }
 
@@ -20,6 +20,9 @@ struct entry_t *entry_create(char *key, struct data_t *data)
 
 void entry_destroy(struct entry_t *entry)
 {
+    if (entry == NULL)
+        return;
+
     data_destroy(entry->value);
     free(entry->key);
     free(entry);
@@ -27,9 +30,11 @@ void entry_destroy(struct entry_t *entry)
 
 struct entry_t *entry_dup(struct entry_t *entry)
 {
+    if (entry == NULL)
+        return NULL;
     struct entry_t *entry_dup = malloc(sizeof(struct entry_t));
 
-    if (entry == NULL)
+    if (entry_dup == NULL)
     {
         perror("entry_dup");
         exit(1);
@@ -42,13 +47,7 @@ struct entry_t *entry_dup(struct entry_t *entry)
         exit(1);
     }
     strcpy(entry_dup->key, entry->key);
-    entry_dup->value = malloc(sizeof(struct data_t));
 
-    if (entry_dup->value == NULL)
-    {
-        perror("entry_dup");
-        exit(1);
-    }
     entry_dup->value = data_dup(entry->value);
 
     return entry_dup;
@@ -56,6 +55,9 @@ struct entry_t *entry_dup(struct entry_t *entry)
 
 void entry_replace(struct entry_t *entry, char *new_key, struct data_t *new_value)
 {
+    if (entry == NULL)
+        return;
+
     free(entry->key);
     data_destroy(entry->value);
     entry->key = new_key;

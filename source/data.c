@@ -5,6 +5,9 @@
 
 struct data_t *data_create(int size)
 {
+    if (size <= 0)
+        return NULL;
+
     struct data_t *new_data = malloc(sizeof(struct data_t));
     if (new_data == NULL)
     {
@@ -23,6 +26,8 @@ struct data_t *data_create(int size)
 
 struct data_t *data_create2(int size, void *data)
 {
+    if (size <= 0 || data == NULL)
+        return NULL;
     struct data_t *new_data = malloc(sizeof(struct data_t));
     if (new_data == NULL)
     {
@@ -36,12 +41,17 @@ struct data_t *data_create2(int size, void *data)
 
 void data_destroy(struct data_t *data)
 {
+    if (data == NULL)
+        return;
+
     free(data->data);
     free(data);
 }
 
 struct data_t *data_dup(struct data_t *data)
 {
+    if (data == NULL || data->datasize <= 0 || data->data == NULL)
+        return NULL;
     struct data_t *new_data = data_create(data->datasize);
     memcpy(new_data->data, data->data, data->datasize);
     return new_data;
