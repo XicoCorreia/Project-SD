@@ -7,6 +7,7 @@
  */
 #include "tree.h"
 #include "tree-private.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -87,9 +88,9 @@ struct data_t *tree_get(struct tree_t *tree, char *key)
 
 int tree_del(struct tree_t *tree, char *key)
 {
-    int size = tree_size(tree);
-    tree_del_aux(tree, key);
-    return size - tree_size(tree) - 1;
+    int ret = 0;
+    tree_del_aux(tree, key, &ret);
+    return ret;
 }
 
 int tree_size(struct tree_t *tree)
@@ -160,4 +161,99 @@ void tree_free_values(void **values)
         count++;
     }
     free(values);
+}
+
+void inorder_keys(struct tree_t *tree, char **keys, int *count)
+{
+    if (tree == NULL)
+    {
+        return;
+    }
+    else
+    {
+        inorder_keys(tree->left, keys, count);
+        keys[*count] = malloc(strlen(tree->entry->key) + 1);
+        if (keys[*count] == NULL)
+        {
+            perror("inorder_keys");
+            exit(1);
+        }
+        strcpy(keys[*count], tree->entry->key);
+        (*count)++;
+        inorder_keys(tree->right, keys, count);
+    }
+}
+
+void inorder_values(struct tree_t *tree, void **values, int *count)
+{
+    if (tree == NULL)
+    {
+        return;
+    }
+    else
+    {
+        inorder_values(tree->left, values, count);
+        int datasize = tree->entry->value->datasize;
+        values[*count] = malloc(datasize);
+        memcpy(values[*count], tree->entry->value->data, datasize);
+        (*count)++;
+        inorder_values(tree->right, values, count);
+    }
+}
+
+struct tree_t *tree_del_aux(struct tree_t *tree, char *key, int *exit_code)
+{
+    if (tree == NULL || tree->entry == NULL)
+    {
+        *exit_code = -1;
+        return tree;
+    }
+    int cmp = strcmp(key, tree->entry->key);
+
+    if (cmp < 0)
+    {
+        tree->left = tree_del_aux(tree->left, key, exit_code);
+    }
+    else if (cmp > 0)
+    {
+        tree->right = tree_del_aux(tree->right, key, exit_code);
+    }
+    else
+    {
+        if (tree->left == NULL && tree->right == NULL)
+        {
+            tree_destroy(tree);
+            tree = NULL;
+        }
+        else if (tree->left == NULL)
+        {
+            tree = tree->right;
+        }
+        else if (tree->right == NULL)
+        {
+            tree = tree->left;
+        }
+        else
+        {
+            struct tree_t *temp = inorder_successor(tree->right);
+            entry_destroy(tree->entry);
+            tree->entry = temp->entry;
+            tree->right = tree_del_aux(tree->right, tree->entry->key, exit_code);
+            free(temp);
+        }
+    }
+    return tree;
+}
+
+struct tree_t *inorder_successor(struct tree_t *tree)
+{
+    if (tree == NULL)
+    {
+        return NULL;
+    }
+    while (tree->left != NULL)
+    {
+        tree = tree->left;
+    }
+    return tree;
 }

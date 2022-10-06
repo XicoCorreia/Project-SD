@@ -7,14 +7,13 @@ BIN_DIR = binary
 INC_DIR = include
 OBJ_DIR = object
 SRC_DIR = source
-OBJECTS = data.o entry.o serialization.o tree-private.o tree.o
+OBJECTS = data.o entry.o serialization.o tree.o
 TESTS = test_data.o test_entry.o test_tree.o test_serialization.o
 
 data.o = data.h
 entry.o = entry.h data.h
 serialization.o = serialization.h data.h entry.h
-tree-private.o = tree-private.h tree.h data.h
-tree.o = tree.h data.h
+tree.o = tree.h tree-private.h data.h
 
 test_data.o = data.h
 test_entry.o = data.h entry.h data.h

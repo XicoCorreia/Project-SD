@@ -17,6 +17,6 @@ void inorder_values(struct tree_t *tree, void **values, int *count);
 
 struct tree_t *inorder_successor(struct tree_t *tree);
 
-struct tree_t *tree_del_aux(struct tree_t *tree, char *key);
+struct tree_t *tree_del_aux(struct tree_t *tree, char *key, int *exit_code);
 
 #endif
