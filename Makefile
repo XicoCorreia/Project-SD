@@ -3,6 +3,7 @@
 #   Francisco Correia - fc54685
 #   Alexandre Fonseca - fc55955
 #   Filipe Egipto - fc56272
+GROUP = grupo48
 BIN_DIR = binary
 INC_DIR = include
 OBJ_DIR = object
@@ -38,5 +39,11 @@ test_data test_entry test_tree test_serialization: $(OBJECTS) $(TESTS)
 %.o: $(SRC_DIR)/%.c $($@)
 	$(CC) $(CFLAGS) -o $(OBJ_DIR)/$@ -c $<
 
+zip:
+	make clean
+	cd ../ && zip -r $(GROUP).zip $(GROUP) -x "*/.clang-format" "*/.git/*" \
+	"*/.gitignore" "*/.vscode/*" "*/source/test*" \
+	"*/.gitkeep"
+
 clean:
-	rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/*
+	rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/* ../$(GROUP).zip
