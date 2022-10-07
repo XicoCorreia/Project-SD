@@ -17,8 +17,14 @@ $ ./binary/test_data
 $ ./binary/test_entry
 $ ./binary/test_tree
 ```
-Por omissão, `make` compila os três ficheiros de teste fornecidos, assim como
-`test_serialization` se este existir.
+Por omissão, `make` compila os três ficheiros de teste fornecidos.
+
+Havendo um ficheiro de testes `test_serialization.c`,
+é possível compilar e corrê-lo através de:
+```
+$ make test_serialization
+$ ./binary/test_serialization
+```
 
 Para remover os ficheiros produzidos pelo compilador basta correr `make clean`.  
 Também remove, quando aplicável, o ficheiro .zip produzido por `make zip`.

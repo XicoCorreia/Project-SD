@@ -9,7 +9,6 @@ INC_DIR = include
 OBJ_DIR = object
 SRC_DIR = source
 OBJECTS = data.o entry.o serialization.o tree.o
-TESTS = test_data.o test_entry.o test_tree.o test_serialization.o
 
 data.o = data.h
 entry.o = entry.h data.h
@@ -31,9 +30,18 @@ vpath %.o $(OBJ_DIR)
 
 default: tests
 
-tests: test_data test_entry test_tree test_serialization
+tests: test_data test_entry test_tree
 
-test_data test_entry test_tree test_serialization: $(OBJECTS) $(TESTS)
+test_data: $(OBJECTS) test_data.o
+	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) $@.o) -o $(BIN_DIR)/$@ $(LIBS)
+
+test_entry: $(OBJECTS) test_entry.o
+	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) $@.o) -o $(BIN_DIR)/$@ $(LIBS)
+
+test_tree: $(OBJECTS) test_tree.o
+	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) $@.o) -o $(BIN_DIR)/$@ $(LIBS)
+
+test_serialization: $(OBJECTS) test_serialization.o
 	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) $@.o) -o $(BIN_DIR)/$@ $(LIBS)
 
 %.o: $(SRC_DIR)/%.c $($@)
@@ -46,4 +54,4 @@ zip:
 	"*/.gitkeep"
 
 clean:
-	rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/* ../$(GROUP).zip
+	rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/* ../$(GROUP)-projeto1.zip
