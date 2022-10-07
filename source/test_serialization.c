@@ -47,6 +47,13 @@ int main(int argc, char const *argv[])
     printf("Array de chaves de-serializado: ");
     print_str_array(final_keys);
 
+    printf("\n[");
+    for (int i = 0; i < 35; i++)
+    {
+        printf("%hhx, ", (*keys_buf)[i]);
+    }
+    printf("]\n");
+
     // CLEANUP
     free(*keys_buf);
     free(keys_buf);

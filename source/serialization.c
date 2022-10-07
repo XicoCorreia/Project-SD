@@ -15,21 +15,24 @@ int keyArray_to_buffer(char **keys, char **keys_buf)
     if (keys == NULL || keys_buf == NULL)
         return -1;
 
-    int keys_buf_size = 0;
-    for (int i = 0; keys[i] != NULL; i++)
+    int i;
+    int keys_buf_size = sizeof(int); // num. de elementos no inicio do buffer
+    for (i = 0; keys[i] != NULL; i++)
     {
-        keys_buf_size += sizeof(int) + strlen(keys[i]) + 1;
+        keys_buf_size += sizeof(int) + strlen(keys[i]);
     }
+
     *keys_buf = malloc(keys_buf_size);
     if (*keys_buf == NULL)
         return -1;
 
-    keys_buf_size = 0;
-    for (int i = 0; keys[i] != NULL; i++)
+    memcpy(*keys_buf, &i, sizeof(int));
+    keys_buf_size = sizeof(int);
+    for (i = 0; keys[i] != NULL; i++)
     {
-        int keylen = strlen(keys[i]) + 1;
+        int keylen = strlen(keys[i]);
         memcpy(*keys_buf + keys_buf_size, &keylen, sizeof(int));
-        strcpy(*keys_buf + keys_buf_size + sizeof(int), keys[i]);
+        memcpy(*keys_buf + keys_buf_size + sizeof(int), keys[i], keylen);
         keys_buf_size += sizeof(int) + keylen;
     }
     return keys_buf_size;
@@ -40,27 +43,25 @@ char **buffer_to_keyArray(char *keys_buf, int keys_buf_size)
     if (keys_buf == NULL || keys_buf_size <= 0)
         return NULL;
 
-    int n = 0;
-    int offset = 0;
-    char **keys;
+    int n = (int)*keys_buf;
+    int offset = sizeof(int);
 
-    while (offset < keys_buf_size)
-    {
-        offset += *(keys_buf + offset) + sizeof(int);
-        n++;
-    }
-
-    keys = malloc((n + 1) * sizeof(char *));
+    char **keys = malloc((n + 1) * sizeof(char *));
     if (keys == NULL)
         return NULL;
 
-    offset = 0;
+    keys[n] = NULL;
     for (int i = 0; i < n; i++)
     {
-        keys[i] = strdup(keys_buf + offset + sizeof(int));
-        offset += *(keys_buf + offset) + sizeof(int);
+        int keylen = (int)*(keys_buf + offset);
+        keys[i] = malloc(keylen + 1);
+        if (keys[i] == NULL)
+            return NULL;
+
+        memcpy(keys[i], keys_buf + offset + sizeof(int), keylen);
+        keys[i][keylen] = '\0';
+        offset += keylen + sizeof(int);
     }
-    keys[n] = NULL;
 
     return keys;
 }

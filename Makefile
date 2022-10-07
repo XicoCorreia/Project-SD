@@ -17,7 +17,7 @@ serialization.o = serialization.h data.h entry.h
 tree.o = tree.h tree-private.h data.h
 
 test_data.o = data.h
-test_entry.o = data.h entry.h data.h
+test_entry.o = data.h entry.h
 test_tree.o = data.h entry.h tree.h
 test_serialization.o = serialization.h
 
