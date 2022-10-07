@@ -49,7 +49,7 @@ test_serialization: $(OBJECTS) test_serialization.o
 
 zip:
 	make clean
-	cd ../ && zip -r $(GROUP).zip $(GROUP) -x "*/.clang-format" "*/.git/*" \
+	cd ../ && zip -r $(GROUP)-projeto1.zip $(GROUP) -x "*/.clang-format" "*/.git/*" \
 	"*/.gitignore" "*/.vscode/*" "*/source/test*" \
 	"*/.gitkeep"
 
