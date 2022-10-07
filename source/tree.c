@@ -14,8 +14,10 @@
 struct tree_t *tree_create()
 {
     struct tree_t *tree = malloc(sizeof(struct tree_t));
+    // Verifica se malloc foi sucedido
     if (tree == NULL)
         return NULL;
+
     tree->left = tree->right = NULL;
     tree->entry = NULL;
     return tree;
@@ -23,6 +25,7 @@ struct tree_t *tree_create()
 
 void tree_destroy(struct tree_t *tree)
 {
+    // Se tree é NULL não acontece nada
     if (tree == NULL)
         return;
 
@@ -38,6 +41,7 @@ int tree_put(struct tree_t *tree, char *key, struct data_t *value)
     if (tree == NULL)
         return -1;
 
+    // No com Entry<key, value>
     if (tree->entry == NULL)
     {
         struct entry_t *entry = entry_create(key, value);
@@ -46,12 +50,14 @@ int tree_put(struct tree_t *tree, char *key, struct data_t *value)
     }
     else if (strcmp(key, tree->entry->key) == 0)
     {
+        // No com key já existe
         entry_replace(tree->entry, strdup(key), data_dup(value));
     }
     else if (strcmp(key, tree->entry->key) < 0)
     {
         if (tree->left == NULL)
         {
+            // Cria a tree a esquerda, onde a key e o value vão ser colocados
             tree->left = tree_create();
         }
         return tree_put(tree->left, key, value);
@@ -60,6 +66,7 @@ int tree_put(struct tree_t *tree, char *key, struct data_t *value)
     {
         if (tree->right == NULL)
         {
+            // Cria a tree direita, onde a key e o value vão ser colocados
             tree->right = tree_create();
         }
         return tree_put(tree->right, key, value);
@@ -74,6 +81,7 @@ struct data_t *tree_get(struct tree_t *tree, char *key)
 
     if (strcmp(key, tree->entry->key) == 0)
     {
+        // Entry com key encontrada
         return data_dup(tree->entry->value);
     }
     else if (strcmp(key, tree->entry->key) < 0)
@@ -171,6 +179,7 @@ void inorder_keys(struct tree_t *tree, char **keys, int *count)
     }
     else
     {
+        // Primeiro arvore esquerda, depois root, por fim arvore direita
         inorder_keys(tree->left, keys, count);
         keys[*count] = malloc(strlen(tree->entry->key) + 1);
         if (keys[*count] == NULL)
@@ -192,6 +201,7 @@ void inorder_values(struct tree_t *tree, void **values, int *count)
     }
     else
     {
+        // Primeiro arvore esquerda, depois root, por fim arvore direita
         inorder_values(tree->left, values, count);
         int datasize = tree->entry->value->datasize;
         values[*count] = malloc(datasize);
@@ -235,9 +245,11 @@ struct tree_t *tree_del_aux(struct tree_t *tree, char *key, int *exit_code)
         }
         else
         {
-            struct tree_t *temp = inorder_successor(tree->right);
+            struct tree_t *temp = inorder_successor(tree);
             entry_destroy(tree->entry);
             tree->entry = temp->entry;
+            // Lidamos com o no sucessor (temp), e.g. se houver um no filho
+            // a direita, este toma a posicao que o no pai tinha
             tree->right = tree_del_aux(tree->right, tree->entry->key, exit_code);
             free(temp);
         }
@@ -247,10 +259,12 @@ struct tree_t *tree_del_aux(struct tree_t *tree, char *key, int *exit_code)
 
 struct tree_t *inorder_successor(struct tree_t *tree)
 {
-    if (tree == NULL)
+    if (tree == NULL || tree->right == NULL)
     {
         return NULL;
     }
+
+    tree = tree->right;
     while (tree->left != NULL)
     {
         tree = tree->left;

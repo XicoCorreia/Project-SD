@@ -39,8 +39,8 @@ struct entry_t *entry_dup(struct entry_t *entry)
 {
     if (entry == NULL)
         return NULL;
-    struct entry_t *dup = malloc(sizeof(struct entry_t));
 
+    struct entry_t *dup = malloc(sizeof(struct entry_t));
     if (dup == NULL)
     {
         perror("entry_dup");
