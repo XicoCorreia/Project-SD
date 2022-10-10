@@ -12,13 +12,7 @@ OBJECTS = data.o entry.o serialization.o tree.o
 
 data.o = data.h
 entry.o = entry.h data.h
-serialization.o = serialization.h data.h entry.h
 tree.o = tree.h tree-private.h data.h
-
-test_data.o = data.h
-test_entry.o = data.h entry.h
-test_tree.o = data.h entry.h tree.h
-test_serialization.o = serialization.h
 
 # -std deve ser gnu99 ou superior para usar strdup
 # em Ubuntu 22.04 (ambiente de labs), o gcc 11 usa -std=gnu++17
@@ -28,30 +22,25 @@ LIBS =
 
 vpath %.o $(OBJ_DIR)
 
-default: tests
+default: tree-client tree-server
 
-tests: test_data test_entry test_tree
-
-test_data: $(OBJECTS) test_data.o
+tree-client: $(OBJECTS) tree-client.o
 	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) $@.o) -o $(BIN_DIR)/$@ $(LIBS)
 
-test_entry: $(OBJECTS) test_entry.o
+tree-server: $(OBJECTS) tree-server.o
 	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) $@.o) -o $(BIN_DIR)/$@ $(LIBS)
 
-test_tree: $(OBJECTS) test_tree.o
-	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) $@.o) -o $(BIN_DIR)/$@ $(LIBS)
-
-test_serialization: $(OBJECTS) test_serialization.o
-	$(CC) $(addprefix $(OBJ_DIR)/, $(OBJECTS) $@.o) -o $(BIN_DIR)/$@ $(LIBS)
+# client.o:
+# Usar linker ld com opção -r: ld -r in1.o in2.o [...] -o client-lib.o
 
 %.o: $(SRC_DIR)/%.c $($@)
 	$(CC) $(CFLAGS) -o $(OBJ_DIR)/$@ -c $<
 
 zip:
 	make clean
-	cd ../ && zip -r $(GROUP)-projeto1.zip $(GROUP) -x "*/.clang-format" "*/.git/*" \
-	"*/.gitignore" "*/.vscode/*" "*/source/test*" \
+	cd ../ && zip -r $(GROUP)-projeto2.zip $(GROUP) -x "*/.clang-format" "*/.git/*" \
+	"*/.gitignore" "*/.vscode/*" \
 	"*/.gitkeep"
 
 clean:
-	rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/* ../$(GROUP)-projeto1.zip
+	rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/* ../$(GROUP)-projeto2.zip

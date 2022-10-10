@@ -1,4 +1,4 @@
-# Sistemas Distribuídos 2022/2023
+# Sistemas Distribuídos 2022/2023 - Projeto (2a parte)
 
 ## Autores (Grupo SD-048)
 
@@ -13,29 +13,11 @@
 No diretório de raíz do projeto, correr o seguinte:
 ```
 $ make
-$ ./binary/test_data
-$ ./binary/test_entry
-$ ./binary/test_tree
+$ tree-server <port>
+$ tree-client <server>:<port>
 ```
-Por omissão, `make` compila os três ficheiros de teste fornecidos.
-
-Havendo um ficheiro de testes `test_serialization.c`,
-é possível compilar e corrê-lo através de:
-```
-$ make test_serialization
-$ ./binary/test_serialization
-```
+Onde `server` é o endereço IP ou nome do servidor da árvore,
+e `port` é o número do porto TCP onde o servidor está à espera de ligações.
 
 Para remover os ficheiros produzidos pelo compilador basta correr `make clean`.  
 Também remove, quando aplicável, o ficheiro .zip produzido por `make zip`.
-
-### Serialização
-
-O formato de serialização de `char **keys` é o seguinte:
-
-| Nº de byte |  0 (4 bytes)  |     4 (4 bytes)      | 8 (k bytes) |   8+k (4 bytes)   | ... |
-| :--------: | :-----------: | :------------------: | :---------: | :---------------: | --- |
-|   Valor    | nº de strings | k: tamanho 1ª string |  1ª string  | tamanho 2ª string | ... |
-|    Tipo    |      int      |        char *        |     int     |      char *       | ... |
-
-As strings **não** são *null-terminated*.
