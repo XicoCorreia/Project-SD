@@ -5,9 +5,10 @@
 
 /* Esta estrutura define o par {chave, valor} para a árvore
  */
-struct entry_t {
-	char *key;	/* string, cadeia de caracteres terminada por '\0' */
-	struct data_t *value; /* Bloco de dados */
+struct entry_t
+{
+    char *key;            /* string, cadeia de caracteres terminada por '\0' */
+    struct data_t *value; /* Bloco de dados */
 };
 
 /* Função que cria uma entry, reservando a memória necessária para a
@@ -28,14 +29,14 @@ void entry_destroy(struct entry_t *entry);
 struct entry_t *entry_dup(struct entry_t *entry);
 
 /* Função que substitui o conteúdo de uma entrada entry_t.
-*  Deve assegurar que destroi o conteúdo antigo da mesma.
-*/
+ *  Deve assegurar que destroi o conteúdo antigo da mesma.
+ */
 void entry_replace(struct entry_t *entry, char *new_key, struct data_t *new_value);
 
 /* Função que compara duas entradas e retorna a ordem das mesmas.
-*  Ordem das entradas é definida pela ordem das suas chaves.
-*  A função devolve 0 se forem iguais, -1 se entry1<entry2, e 1 caso contrário.
-*/
+ *  Ordem das entradas é definida pela ordem das suas chaves.
+ *  A função devolve 0 se forem iguais, -1 se entry1<entry2, e 1 caso contrário.
+ */
 int entry_compare(struct entry_t *entry1, struct entry_t *entry2);
 
 #endif

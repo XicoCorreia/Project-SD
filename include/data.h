@@ -3,13 +3,14 @@
 
 /* Estrutura que define os dados.
  */
-struct data_t {
-	int datasize; /* Tamanho do bloco de dados */
-	void *data;   /* Conteúdo arbitrário */
+struct data_t
+{
+    int datasize; /* Tamanho do bloco de dados */
+    void *data;   /* Conteúdo arbitrário */
 };
 
 /* Função que cria um novo elemento de dados data_t, reservando a memória
- * necessária para armazenar os dados, especificada pelo parâmetro size 
+ * necessária para armazenar os dados, especificada pelo parâmetro size
  */
 struct data_t *data_create(int size);
 
@@ -17,7 +18,7 @@ struct data_t *data_create(int size);
  * data com o valor passado no parâmetro data, sem necessidade de reservar
  * memória para os dados.
  */
-struct data_t *data_create2(int size, void *data); 
+struct data_t *data_create2(int size, void *data);
 
 /* Função que elimina um bloco de dados, apontado pelo parâmetro data,
  * libertando toda a memória por ele ocupada.
@@ -30,8 +31,8 @@ void data_destroy(struct data_t *data);
 struct data_t *data_dup(struct data_t *data);
 
 /* Função que substitui o conteúdo de um elemento de dados data_t.
-*  Deve assegurar que destroi o conteúdo antigo do mesmo.
-*/
+ *  Deve assegurar que destroi o conteúdo antigo do mesmo.
+ */
 void data_replace(struct data_t *data, int new_size, void *new_data);
 
 #endif

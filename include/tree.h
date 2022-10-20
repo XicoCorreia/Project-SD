@@ -60,7 +60,6 @@ char **tree_get_keys(struct tree_t *tree);
  */
 void **tree_get_values(struct tree_t *tree);
 
-
 /* Função que liberta toda a memória alocada por tree_get_keys().
  */
 void tree_free_keys(char **keys);

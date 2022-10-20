@@ -18,7 +18,7 @@ void tree_skel_destroy();
 /* Executa uma operação na árvore (indicada pelo opcode contido em msg)
  * e utiliza a mesma estrutura message_t para devolver o resultado.
  * Retorna 0 (OK) ou -1 (erro, por exemplo, árvore nao incializada)
-*/
-int invoke(struct message_t *msg);
+ */
+int invoke(MessageT *msg);
 
 #endif
