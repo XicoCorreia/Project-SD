@@ -30,38 +30,47 @@ int main(int argc, char const *argv[])
                 if(token != NULL)
                     strcat(value, " ");
             }
-            printf("%s\n", value);
 
             struct data_t* data = data_create2(strlen(value), value);
             struct entry_t* entry = entry_create(key, data);
 
             int i = rtree_put(rtree, entry); 
-            if(i == -1)
-                printf("FALHOU PUT\n");    
+            if(i == -1){
+                perror("Erro no comando put\n");    
+                return -1;
+            }
         }
         else if(strcmp(token, "get") == 0){     
             char* key = strtok(NULL, " ");
             struct data_t* data = rtree_get(rtree, key);
-            if(data == NULL)
-                printf("FALHOU GET\n");
+            if(data == NULL){
+                perror("Erro no comando get\n");    
+                return -1;
+            }
         }
         else if(strcmp(token, "del") == 0){    
             char* key = strtok(NULL, " ");
             int i = rtree_del(rtree, key);  
-            if(i == -1)
-                printf("FALHOU DEL\n");
+            if(i == -1){
+                perror("Erro no comando del\n");    
+                return -1;
+            }
         }
         else if(strcmp(token, "size") == 0){
             int size = rtree_size(rtree);
-            if(size == -1)
-                printf("FALHOU SIZE\n");  
+            if(size == -1){
+                perror("Erro no comando size\n");    
+                return -1;
+            }
             else
                 printf("%d\n", size);
         }
         else if(strcmp(token, "height") == 0){
             int height = rtree_height(rtree);
-            if(height == -1)
-                printf("FALHOU HEIGHT\n"); 
+            if(height == -1){
+                perror("Erro no comando height\n");    
+                return -1;
+            } 
             else
                 printf("%d\n", height);
         }
@@ -75,12 +84,13 @@ int main(int argc, char const *argv[])
             
         }
         else if(strcmp(token, "quit") == 0){   
-            int i = rtree_disconnect(rtree);        
-            if(i == -1)
-                printf("FALHOU QUIT\n");
+            int i = rtree_disconnect(rtree);            // ? Colocar o disconnect fora do while
+            if(i == -1){
+                perror("Erro no comando quit\n");    
+                return -1;
+            }
             break;
         }
-
     }
     return 0;
 }
