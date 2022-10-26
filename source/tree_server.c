@@ -3,7 +3,8 @@
 int main(int argc, char const *argv[])
 {
     /* Testar os argumentos de entrada */
-    if (argc != 2){
+    if (argc != 2)
+    {
         printf("Uso: ./tree-server <port>\n");
         printf("Exemplo de uso: ./tree-server 12345\n");
         return -1;
