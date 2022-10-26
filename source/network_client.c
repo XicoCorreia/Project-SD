@@ -49,9 +49,9 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
     int nbytes;
 
     // Serializar mensagem
-    int len = message_t__get_packed_size(&msg);
+    int len = message_t__get_packed_size(msg);
     void *buf = malloc(len);
-    message_t__pack(&msg, buf);
+    message_t__pack(msg, buf);
 
     // Enviar mensagem para o servidor
     if ((nbytes = write(sockfd, msg, len)) != len)
@@ -66,10 +66,10 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
     {
         perror("Erro ao receber dados");
         close(sockfd);
-        return -1;
+        return NULL;
     }
     // De-serializar mensagem recebida
-    MessageT *msg = message_t__unpack(NULL, nbytes, buf); // ? Argumentos certos
+    msg = message_t__unpack(NULL, nbytes, buf); // ? Argumentos certos
     free(buf);
     return msg;
 }
