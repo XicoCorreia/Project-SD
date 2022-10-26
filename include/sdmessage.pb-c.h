@@ -16,6 +16,8 @@ PROTOBUF_C__BEGIN_DECLS
 
 
 typedef struct _MessageT MessageT;
+typedef struct _KeysT KeysT;
+typedef struct _ValuesT ValuesT;
 
 
 /* --- enums --- */
@@ -58,6 +60,28 @@ struct  _MessageT
     , MESSAGE_T__OPCODE__OP_BAD, MESSAGE_T__C_TYPE__CT_BAD, {0,NULL} }
 
 
+struct  _KeysT
+{
+  ProtobufCMessage base;
+  size_t n_keys;
+  char **keys;
+};
+#define KEYS_T__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&keys_t__descriptor) \
+    , 0,NULL }
+
+
+struct  _ValuesT
+{
+  ProtobufCMessage base;
+  size_t n_values;
+  ProtobufCBinaryData *values;
+};
+#define VALUES_T__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&values_t__descriptor) \
+    , 0,NULL }
+
+
 /* MessageT methods */
 void   message_t__init
                      (MessageT         *message);
@@ -77,10 +101,54 @@ MessageT *
 void   message_t__free_unpacked
                      (MessageT *message,
                       ProtobufCAllocator *allocator);
+/* KeysT methods */
+void   keys_t__init
+                     (KeysT         *message);
+size_t keys_t__get_packed_size
+                     (const KeysT   *message);
+size_t keys_t__pack
+                     (const KeysT   *message,
+                      uint8_t             *out);
+size_t keys_t__pack_to_buffer
+                     (const KeysT   *message,
+                      ProtobufCBuffer     *buffer);
+KeysT *
+       keys_t__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   keys_t__free_unpacked
+                     (KeysT *message,
+                      ProtobufCAllocator *allocator);
+/* ValuesT methods */
+void   values_t__init
+                     (ValuesT         *message);
+size_t values_t__get_packed_size
+                     (const ValuesT   *message);
+size_t values_t__pack
+                     (const ValuesT   *message,
+                      uint8_t             *out);
+size_t values_t__pack_to_buffer
+                     (const ValuesT   *message,
+                      ProtobufCBuffer     *buffer);
+ValuesT *
+       values_t__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   values_t__free_unpacked
+                     (ValuesT *message,
+                      ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
 typedef void (*MessageT_Closure)
                  (const MessageT *message,
+                  void *closure_data);
+typedef void (*KeysT_Closure)
+                 (const KeysT *message,
+                  void *closure_data);
+typedef void (*ValuesT_Closure)
+                 (const ValuesT *message,
                   void *closure_data);
 
 /* --- services --- */
@@ -91,6 +159,8 @@ typedef void (*MessageT_Closure)
 extern const ProtobufCMessageDescriptor message_t__descriptor;
 extern const ProtobufCEnumDescriptor    message_t__opcode__descriptor;
 extern const ProtobufCEnumDescriptor    message_t__c_type__descriptor;
+extern const ProtobufCMessageDescriptor keys_t__descriptor;
+extern const ProtobufCMessageDescriptor values_t__descriptor;
 
 PROTOBUF_C__END_DECLS
 
