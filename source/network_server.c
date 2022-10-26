@@ -5,7 +5,9 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
+int MAX_MSG = 4096;
 int sockfd;
 
 int network_server_init(short port)
@@ -76,18 +78,14 @@ int network_main_loop(int listening_socket)
 
 MessageT *network_receive(int client_socket)
 {
-    MessageT msg;
-    message_t__init(&msg);
-    int len = message_t__get_packed_size(&msg);
-    void *buffer;
-    int size = read(client_socket, buffer, len); // read_all
-    if (size != len)
+    void *buffer = malloc(MAX_MSG);
+    int size = read(client_socket, buffer, MAX_MSG); // read_all
+    if (size < 0)
     {
         perror("network_receive");
         return NULL;
     }
-    *(msg) = message_t__unpack(NULL, len, buffer);
-    return &msg;
+    return message_t__unpack(NULL, size, buffer);
 }
 
 int network_send(int client_socket, MessageT *msg)
@@ -101,7 +99,7 @@ int network_send(int client_socket, MessageT *msg)
     }
     message_t__pack(msg, buffer);
     message_t__free_unpacked(msg, NULL);
-    size = write(client_socket, buffer, len); // write_all
+    int size = write(client_socket, buffer, len); // write_all
     if (size != len)
     {
         perror("network_send");
