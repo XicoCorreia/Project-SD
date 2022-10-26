@@ -1,11 +1,12 @@
 #include "network_server.h"
-#include "inet.h"
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+int sockfd;
 
 int network_server_init(short port)
 {

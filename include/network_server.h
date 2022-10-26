@@ -3,8 +3,6 @@
 
 #include "tree_skel.h"
 
-int sockfd;
-
 /* Função para preparar uma socket de receção de pedidos de ligação
  * num determinado porto.
  * Retornar descritor do socket (OK) ou -1 (erro).
