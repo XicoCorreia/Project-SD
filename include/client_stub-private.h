@@ -10,7 +10,7 @@ struct rtree_t
     // TODO
     u_int16_t port;
     char *address;
-    int socketfd;
+    int sockfd;
 };
 
 #endif

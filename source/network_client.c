@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 int network_connect(struct rtree_t *rtree)
 {
     int sockfd;
@@ -37,7 +38,7 @@ int network_connect(struct rtree_t *rtree)
         return -1;
     }
 
-    rtree->socketfd = sockfd;
+    rtree->sockfd = sockfd;
 
     return 0;
 }
@@ -45,7 +46,7 @@ int network_connect(struct rtree_t *rtree)
 MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
 {
 
-    int sockfd = rtree->socketfd;
+    int sockfd = rtree->sockfd;
     int nbytes;
     sdmessage__init(&msg); // ? Necessário
 
@@ -79,6 +80,6 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
  */
 int network_close(struct rtree_t *rtree)
 {
-    close(rtree->socketfd);
+    close(rtree->sockfd);
     return 0;
 }
