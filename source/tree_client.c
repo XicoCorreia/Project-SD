@@ -7,7 +7,7 @@
 
 int main(int argc, char const *argv[])
 {
-    struct rtree_t *rtree = rtree_connect(argv[1]);
+    struct rtree_t *rtree = rtree_connect(argv[1]); // ! Verificar argumentos
 
     while (true)
     {
@@ -21,8 +21,8 @@ int main(int argc, char const *argv[])
         {
 
             token = strtok(NULL, " ");
-            char *key = malloc(sizeof(char *) * sizeof(token));
-            char *value = malloc(sizeof(char *) * 100); // ! Tem tamanho definido
+            char *key = strdup(token);
+            char *value = malloc(sizeof(char) * 100); // ! Tem tamanho definido
 
             token = strtok(NULL, " ");
             while (token != NULL)

@@ -23,7 +23,7 @@ struct rtree_t *rtree_connect(const char *address_port)
         return NULL;
     }
     rtree = malloc(sizeof(struct rtree_t));
-    rtree->address = strdup(address);
+    rtree->address = address;
     rtree->port = port;
     if (network_connect(rtree) == -1)
     {
@@ -48,7 +48,7 @@ int rtree_put(struct rtree_t *rtree, struct entry_t *entry)
     msg.opcode = MESSAGE_T__OPCODE__OP_PUT;
     msg.c_type = MESSAGE_T__C_TYPE__CT_ENTRY;
     msg.data.len = sizeof(struct entry_t);
-    msg.data.data = (uint8_t *)entry;
+    msg.data.data = (uint8_t *)entry; // ! fazer memcpy para estes
     if (network_send_receive(rtree, &msg) == NULL)
     {
         return -1;

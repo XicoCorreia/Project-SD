@@ -1,4 +1,5 @@
 #include "network_server.h"
+#include <arpa/inet.h>
 
 int main(int argc, char const *argv[])
 {

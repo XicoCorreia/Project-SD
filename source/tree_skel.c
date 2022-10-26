@@ -95,8 +95,10 @@ int invoke(MessageT *msg)
         KeysT keys = KEYS_T__INIT;
         keys.keys = tree_get_keys(tree);
 
-        for (; keys.keys[keys.n_keys] != NULL; keys.n_keys++)
+        int i;
+        for (i = 0; keys.keys[i] != NULL; i++)
             ;
+        keys.n_keys = i;
 
         msg->opcode = MESSAGE_T__OPCODE__OP_GETKEYS + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_KEYS;
@@ -109,8 +111,13 @@ int invoke(MessageT *msg)
         ValuesT values = VALUES_T__INIT;
         values.values->data = tree_get_values(tree);
 
-        for (; values.values->data[values.n_values] != NULL; values.n_values++)
-            ;
+        int i;
+        for (i = 0; values.values[i].data != NULL; i++)
+        {
+            // ! Os dados são void*: não podemos só strlen...
+            values.values[i].len = strlen((char *)values.values[i].data);
+        }
+        values.n_values = i;
 
         msg->opcode = MESSAGE_T__OPCODE__OP_GETVALUES + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_VALUES;

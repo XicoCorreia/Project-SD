@@ -26,7 +26,7 @@ int network_server_init(short port)
 
     int opt = 1;
 
-    int sets = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    int sets = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // ! confirmar
     if (sets < 0)
     {
         perror("network_server_init");
@@ -51,18 +51,24 @@ int network_main_loop(int listening_socket)
         return -1;
     }
 
-    sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL); // chega ?
+    sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL); // ? chega
 
     struct sockaddr_in my_soc;
     socklen_t addr_size;
     int csock;
 
+    // ! accept devolve -1 em caso de erro, lidar?
     while ((csock = accept(listening_socket, (struct sockaddr *)&my_soc, &addr_size)) != -1)
     {
         MessageT *msg = network_receive(csock);
         int res;
         if ((res = invoke(msg)) != 0)
         {
+            if (msg->c_type == MESSAGE_T__C_TYPE__CT_RESULT)
+            {
+                int err = *msg->data.data;
+                return err;
+            }
             return res; // erro
         }
         network_send(csock, msg);
@@ -79,13 +85,20 @@ int network_main_loop(int listening_socket)
 MessageT *network_receive(int client_socket)
 {
     void *buffer = malloc(MAX_MSG);
+    if (buffer == NULL)
+    {
+        perror("network_receive");
+        return NULL;
+    }
     int size = read(client_socket, buffer, MAX_MSG); // read_all
     if (size < 0)
     {
         perror("network_receive");
         return NULL;
     }
-    return message_t__unpack(NULL, size, buffer);
+    MessageT *msg = message_t__unpack(NULL, size, buffer);
+    free(buffer);
+    return msg;
 }
 
 int network_send(int client_socket, MessageT *msg)
