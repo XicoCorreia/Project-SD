@@ -1,14 +1,26 @@
 #include "tree_skel.h"
+#include "entry.h"
+#include "string.h"
+#include "tree-private.h"
+#include "tree.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+struct tree_t *tree;
 
 int tree_skel_init()
 {
-    // TODO
-    return -1;
+    tree = tree_create();
+    if (tree == NULL)
+    {
+        return -1;
+    }
+    return 0;
 }
 
 void tree_skel_destroy()
 {
-    // TODO
+    tree_destroy(tree);
 }
 
 int invoke(MessageT *msg)
@@ -17,33 +29,102 @@ int invoke(MessageT *msg)
 
     switch (msg->opcode)
     {
-    case MESSAGE_T__OPCODE__OP_BAD:
-        /* code */
-        break;
     case MESSAGE_T__OPCODE__OP_SIZE:
+        int size = tree_size(tree);
+        msg->opcode = MESSAGE_T__OPCODE__OP_SIZE + 1;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+        msg->data.len = sizeof(int);
+        msg->data.data = (int *)malloc(sizeof(int));
+        *msg->data.data = size;
         break;
     case MESSAGE_T__OPCODE__OP_HEIGHT:
-        /* code */
+        int height = tree_height(tree);
+        msg->opcode = MESSAGE_T__OPCODE__OP_HEIGHT + 1;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+        msg->data.len = sizeof(int);
+        msg->data.data = (int *)malloc(sizeof(int));
+        *msg->data.data = height;
         break;
     case MESSAGE_T__OPCODE__OP_DEL:
-        /* code */
+        if (tree_del(tree, (char *)msg->data.data) < 0)
+        {
+            // tratar como OP_BAD ou ignorar?
+        }
+        else
+        {
+            msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
+            msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+        }
+        free(msg->data.data);
+        msg->data.len = 0;
+        msg->data.data = NULL;
         break;
     case MESSAGE_T__OPCODE__OP_GET:
-        /* code */
+        struct data_t *value = tree_get(tree, (char *)msg->data.data);
+        free(msg->data.data);
+        if (value == NULL)
+        {
+            msg->data.data = NULL;
+            msg->data.len = 0;
+        }
+        else
+        {
+            msg->data.data = malloc(value->datasize);
+            memcpy(msg->data.data, value->data, value->datasize);
+            msg->data.len = value->datasize;
+        }
+        msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_VALUE;
         break;
     case MESSAGE_T__OPCODE__OP_PUT:
-        /* code */
+        struct entry_t *entry = msg->data.data;
+        if (tree_put(tree, entry->key, entry->value) < 0)
+        {
+            // tratar como OP_BAD ou ignorar?
+        }
+        else
+        {
+            msg->opcode = MESSAGE_T__OPCODE__OP_PUT + 1;
+            msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+        }
+        free(msg->data.data);
+        msg->data.len = 0;
+        msg->data.data = NULL;
         break;
     case MESSAGE_T__OPCODE__OP_GETKEYS:
-        /* code */
+        KeysT keys = KEYS_T__INIT;
+        keys.keys = tree_get_keys(tree);
+
+        for (; keys.keys[keys.n_keys] != NULL; keys.n_keys++)
+            ;
+
+        msg->opcode = MESSAGE_T__OPCODE__OP_GETKEYS + 1;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_KEYS;
+        free(msg->data.data);
+        msg->data.len = keys_t__get_packed_size(&keys);
+        msg->data.data = malloc(msg->data.len);
+        keys_t__pack(&keys, msg->data.data);
         break;
     case MESSAGE_T__OPCODE__OP_GETVALUES:
-        /* code */
+        ValuesT values = VALUES_T__INIT;
+        values.values->data = tree_get_values(tree);
+
+        for (; values.values->data[values.n_values] != NULL; values.n_values++)
+            ;
+
+        msg->opcode = MESSAGE_T__OPCODE__OP_GETVALUES + 1;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_VALUES;
+        free(msg->data.data);
+        msg->data.len = values_t__get_packed_size(&keys);
+        msg->data.data = malloc(msg->data.len);
+        keys_t__pack(&keys, msg->data.data);
         break;
-    case MESSAGE_T__OPCODE__OP_ERROR:
-        /* code */
-        return -1;
     default:
+        msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+        free(msg->data.data);
+        msg->data.len = 0;
+        msg->data.data = NULL;
         return -1;
     }
     return 0;
