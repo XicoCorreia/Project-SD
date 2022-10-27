@@ -47,5 +47,4 @@ zip:
 	"*/.gitkeep"
 
 clean:
-	rm -f $(INC_DIR)/sdmessage.pb-c.h $(SRC_DIR)/sdmessage.pb-c.c \
-	$(OBJ_DIR)/* $(BIN_DIR)/* ../$(GROUP)-projeto2.zip
+	rm -f $(OBJ_DIR)/* $(BIN_DIR)/* ../$(GROUP)-projeto2.zip
