@@ -7,7 +7,9 @@
 struct rtree_t *rtree_connect(const char *address_port)
 {
     struct rtree_t *rtree;
-    char *address = strtok(address_port, ":");
+    char address_port_copy[strlen(address_port) + 1];
+    strcpy(address_port_copy, address_port); // 'strtok' discards 'const'
+    char *address = strtok(address_port_copy, ":");
     if (address == NULL)
     {
         return NULL;

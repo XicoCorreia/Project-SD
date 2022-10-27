@@ -88,12 +88,46 @@ int main(int argc, char const *argv[])
         else if (strcmp(token, "getkeys") == 0)
         {
             char **keys = rtree_get_keys(rtree);
-            printf("Correu\n");
+            if (keys == NULL)
+            {
+                perror("(tree_client) rtree_get_keys");
+                continue;
+            }
+            if (keys[0] != NULL)
+            {
+                printf("[%s", keys[0]);
+                for (int i = 1; keys[i] != NULL; i++)
+                {
+                    printf(", %s", keys[i]);
+                }
+                printf("]\n");
+            }
+            else
+            {
+                printf("Arvore vazia.\n");
+            }
         }
         else if (strcmp(token, "getvalues") == 0)
         {
-            void **values = rtree_get_values(rtree);
-            printf("Correu\n");
+            struct data_t **values = (struct data_t **)rtree_get_values(rtree);
+            if (values == NULL)
+            {
+                perror("(tree_client) rtree_get_values");
+                continue;
+            }
+            if (values[0] != NULL)
+            {
+                printf("[%s", (char *)values[0]->data);
+                for (int i = 1; values[i] != NULL; i++)
+                {
+                    printf(", %s", (char *)values[i]->data); // ! assume-se string
+                }
+                printf("]\n");
+            }
+            else
+            {
+                printf("Arvore vazia.\n");
+            }
         }
         else if (strcmp(token, "quit") == 0)
         {
