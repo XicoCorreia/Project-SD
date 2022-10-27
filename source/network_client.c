@@ -2,11 +2,26 @@
 #include "client_stub-private.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+// Função que faz com que o sinal SIGPIPE seja ignorado.
+void signal_sigpipe()
+{
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGPIPE, &sa, NULL) == -1)
+    {
+        perror("signal_sigpipe");
+        exit(EXIT_FAILURE);
+    }
+}
 
 int network_connect(struct rtree_t *rtree)
 {
@@ -39,6 +54,8 @@ int network_connect(struct rtree_t *rtree)
     }
 
     rtree->sockfd = sockfd;
+
+    signal_sigpipe();
 
     return 0;
 }

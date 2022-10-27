@@ -11,6 +11,20 @@
 int MAX_MSG = 4096;
 int sockfd;
 
+// Função que faz com que o sinal SIGPIPE seja ignorado.
+void signal_sigpipe()
+{
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGPIPE, &sa, NULL) == -1)
+    {
+        perror("signal_sigpipe");
+        exit(EXIT_FAILURE);
+    }
+}
+
 int network_server_init(short port)
 {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -52,7 +66,7 @@ int network_main_loop(int listening_socket)
         return -1;
     }
 
-    sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL); // ? chega
+    signal_sigpipe();
 
     struct sockaddr_in my_soc;
     socklen_t addr_size;
