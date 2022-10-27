@@ -21,7 +21,7 @@ void inorder_keys(struct tree_t *tree, char **keys, int *count);
  * Função que percorre a árvore "em ordem" (esquerda -> nó -> direita),
  * adicionando a **values os valores dos nós percorridos.
  */
-void inorder_values(struct tree_t *tree, void **values, int *count);
+void inorder_values(struct tree_t *tree, struct data_t **values, int *count);
 
 /*
  * Função que devolve o nó sucessor de uma dada (sub-)árvore.

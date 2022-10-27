@@ -80,7 +80,8 @@ int invoke(MessageT *msg)
         struct entry_t *entry = msg->data.data;
         if (tree_put(tree, entry->key, entry->value) < 0)
         {
-            // tratar como OP_BAD ou ignorar?
+            msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+            msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
         }
         else
         {
@@ -94,11 +95,7 @@ int invoke(MessageT *msg)
     case MESSAGE_T__OPCODE__OP_GETKEYS:
         KeysT keys = KEYS_T__INIT;
         keys.keys = tree_get_keys(tree);
-
-        int i;
-        for (i = 0; keys.keys[i] != NULL; i++)
-            ;
-        keys.n_keys = i;
+        keys.n_keys = tree_size(tree);
 
         msg->opcode = MESSAGE_T__OPCODE__OP_GETKEYS + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_KEYS;
@@ -106,25 +103,26 @@ int invoke(MessageT *msg)
         msg->data.len = keys_t__get_packed_size(&keys);
         msg->data.data = malloc(msg->data.len);
         keys_t__pack(&keys, msg->data.data);
+        keys_t__free_unpacked(&keys, NULL);
         break;
     case MESSAGE_T__OPCODE__OP_GETVALUES:
+        struct data_t **data_arr = (struct data_t **)tree_get_values(tree);
         ValuesT values = VALUES_T__INIT;
-        values.values->data = tree_get_values(tree);
-
-        int i;
-        for (i = 0; values.values[i].data != NULL; i++)
+        values.n_values = tree_size(tree);
+        values.values = malloc(sizeof(ProtobufCBinaryData) * values.n_values);
+        for (int i = 0; i < values.n_values; i++)
         {
-            // ! Os dados são void*: não podemos só strlen...
-            values.values[i].len = strlen((char *)values.values[i].data);
+            values.values[i].len = data_arr[i]->datasize;
+            values.values[i].data = data_arr[i]->data;
+            free(data_arr[i]);
         }
-        values.n_values = i;
-
         msg->opcode = MESSAGE_T__OPCODE__OP_GETVALUES + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_VALUES;
         free(msg->data.data);
-        msg->data.len = values_t__get_packed_size(&keys);
+        msg->data.len = values_t__get_packed_size(&values);
         msg->data.data = malloc(msg->data.len);
-        keys_t__pack(&keys, msg->data.data);
+        values_t__pack(&values, msg->data.data);
+        values_t__free_unpacked(&values, NULL);
         break;
     default:
         msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;

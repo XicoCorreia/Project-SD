@@ -140,13 +140,13 @@ char **tree_get_keys(struct tree_t *tree)
 void **tree_get_values(struct tree_t *tree)
 {
     int size = tree_size(tree);
-    void **values = malloc(sizeof(void *) * (size + 1));
+    struct data_t **values = malloc(sizeof(struct data_t *) * (size + 1));
     int count = 0;
 
     inorder_values(tree, values, &count);
     values[size] = NULL;
 
-    return values;
+    return (void **)values;
 }
 
 void tree_free_keys(char **keys)
@@ -193,7 +193,7 @@ void inorder_keys(struct tree_t *tree, char **keys, int *count)
     }
 }
 
-void inorder_values(struct tree_t *tree, void **values, int *count)
+void inorder_values(struct tree_t *tree, struct data_t **values, int *count)
 {
     if (tree == NULL)
     {
@@ -203,9 +203,7 @@ void inorder_values(struct tree_t *tree, void **values, int *count)
     {
         // Primeiro arvore esquerda, depois root, por fim arvore direita
         inorder_values(tree->left, values, count);
-        int datasize = tree->entry->value->datasize;
-        values[*count] = malloc(datasize);
-        memcpy(values[*count], tree->entry->value->data, datasize);
+        values[*count] = data_dup(tree->entry->value);
         (*count)++;
         inorder_values(tree->right, values, count);
     }
