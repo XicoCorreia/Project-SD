@@ -1,6 +1,8 @@
 #include "network_server.h"
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,10 +40,7 @@ int network_server_init(short port)
     my_soc.sin_addr.s_addr = htonl(INADDR_ANY);
     my_soc.sin_port = port;
 
-    int opt = 1;
-
-    int sets = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // ! confirmar
-    if (sets < 0)
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
     {
         perror("network_server_init");
         return -1;
@@ -69,33 +68,34 @@ int network_main_loop(int listening_socket)
 
     struct sockaddr_in *my_soc = malloc(sizeof(struct sockaddr_in));
     socklen_t addr_size = 0;
-    int csock = 0;
+    int connsockfd = 0;
 
-    while ((csock = accept(listening_socket, (struct sockaddr *)&my_soc, &addr_size)) != -1)
+    while ((connsockfd = accept(listening_socket, (struct sockaddr *)&my_soc, &addr_size)) != -1)
     {
-        printf("Connection received!\n");
-        MessageT *msg = network_receive(csock);
-        int res;
-        if ((res = invoke(msg)) != 0)
+        printf("Ligação estabelecida com o cliente '%s:%d'\n", inet_ntoa(my_soc->sin_addr), my_soc->sin_port);
+        while (true)
         {
-            if (msg->c_type == MESSAGE_T__C_TYPE__CT_RESULT)
+            MessageT *msg = network_receive(connsockfd);
+            if (msg == NULL)
             {
-                int err = *msg->data.data;
-                return err;
+                printf("Foi fechada a ligação com o cliente.");
             }
-            return res; // erro
-        }
-        network_send(csock, msg);
-        if (close(csock) < 0)
-        {
-            perror("network_main_loop");
-            free(my_soc);
-            return -1;
+            int res;
+            if ((res = invoke(msg)) != 0)
+            {
+                if (msg->c_type == MESSAGE_T__C_TYPE__CT_RESULT)
+                {
+                    int err = *msg->data.data;
+                    printf("Erro na mensagem recebida pelo servidor: %d\n", err);
+                }
+                return res; // erro
+            }
+            network_send(connsockfd, msg);
         }
     }
 
     free(my_soc);
-    if (csock == -1)
+    if (connsockfd < 0 || close(connsockfd) < 0)
     {
         perror("network_main_loop");
         return -1;
@@ -112,13 +112,14 @@ MessageT *network_receive(int client_socket)
     nbytes = read(client_socket, &len, sizeof(int));
     if (nbytes != sizeof(int))
     {
-        perror("network_receive - read");
+        printf("Erro a receber dados do cliente.\n");
+        close(client_socket);
         return NULL;
     }
 
     if (len <= 0)
     {
-        perror("network_receive - invalid buffer size received");
+        printf("Tamanho de buffer pedido inválido: %d\n", len);
         close(client_socket);
         return NULL;
     }
@@ -126,14 +127,14 @@ MessageT *network_receive(int client_socket)
     buffer = malloc(len);
     if (buffer == NULL)
     {
-        perror("network_receive - malloc");
+        perror("network_receive");
         return NULL;
     }
 
     nbytes = read(client_socket, buffer, len); // read_all
     if (nbytes != len)
     {
-        perror("network_receive - read");
+        printf("Erro a receber dados do cliente.");
         return NULL;
     }
 
@@ -162,7 +163,7 @@ int network_send(int client_socket, MessageT *msg)
     message_t__free_unpacked(msg, NULL);
     if ((nbytes = write(client_socket, buffer, len + offset)) != len + offset)
     {
-        perror("network_send - write");
+        printf("Erro a enviar dados para o cliente.");
         close(client_socket);
         return -1;
     }

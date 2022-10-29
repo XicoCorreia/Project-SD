@@ -10,7 +10,18 @@ size_t MAX_VAL = 32768;
 
 int main(int argc, char const *argv[])
 {
-    struct rtree_t *rtree = rtree_connect(argv[1]); // ! Verificar argumentos
+    /* Testar os argumentos de entrada */
+    if (argc != 2)
+    {
+        printf("Uso: ./tree-client <server:port>\n");
+        printf("Exemplo de uso: ./tree-client 127.0.0.1:12345\n");
+        exit(EXIT_FAILURE);
+    }
+    struct rtree_t *rtree = rtree_connect(argv[1]);
+    if (rtree == NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
 
     while (true)
     {
@@ -42,8 +53,7 @@ int main(int argc, char const *argv[])
             int i = rtree_put(rtree, entry);
             if (i == -1)
             {
-                perror("Erro no comando put\n");
-                return -1;
+                printf("Erro no comando 'put'.\n");
             }
         }
         else if (strcmp(token, "get") == 0)
@@ -52,8 +62,7 @@ int main(int argc, char const *argv[])
             struct data_t *data = rtree_get(rtree, key);
             if (data == NULL)
             {
-                perror("Erro no comando get\n");
-                return -1;
+                printf("Erro no comando 'get'.\n");
             }
         }
         else if (strcmp(token, "del") == 0)
@@ -62,8 +71,7 @@ int main(int argc, char const *argv[])
             int i = rtree_del(rtree, key);
             if (i == -1)
             {
-                perror("Erro no comando del\n");
-                return -1;
+                printf("Erro no comando 'del'.\n");
             }
         }
         else if (strcmp(token, "size") == 0)
@@ -71,22 +79,24 @@ int main(int argc, char const *argv[])
             int size = rtree_size(rtree);
             if (size == -1)
             {
-                perror("Erro no comando size\n");
-                return -1;
+                printf("Erro no comando 'size'.\n");
             }
             else
+            {
                 printf("%d\n", size);
+            }
         }
         else if (strcmp(token, "height") == 0)
         {
             int height = rtree_height(rtree);
             if (height == -1)
             {
-                perror("Erro no comando height\n");
-                return -1;
+                printf("Erro no comando 'height'.\n");
             }
             else
+            {
                 printf("%d\n", height);
+            }
         }
         else if (strcmp(token, "getkeys") == 0)
         {
@@ -94,9 +104,8 @@ int main(int argc, char const *argv[])
             if (keys == NULL)
             {
                 perror("(tree_client) rtree_get_keys");
-                continue;
             }
-            if (keys[0] != NULL)
+            else if (keys[0] != NULL)
             {
                 printf("[%s", keys[0]);
                 for (int i = 1; keys[i] != NULL; i++)
@@ -116,9 +125,8 @@ int main(int argc, char const *argv[])
             if (values == NULL)
             {
                 perror("(tree_client) rtree_get_values");
-                continue;
             }
-            if (values[0] != NULL)
+            else if (values[0] != NULL)
             {
                 printf("[%s", (char *)values[0]->data);
                 for (int i = 1; values[i] != NULL; i++)
@@ -132,16 +140,16 @@ int main(int argc, char const *argv[])
                 printf("Arvore vazia.\n");
             }
         }
-        else if (strcmp(token, "quit") == 0)
+        else if (strcmp(token, "quit") == 0 || strcmp(token, "exit") == 0)
         {
-            int i = rtree_disconnect(rtree); // ? Colocar o disconnect fora do while
-            if (i == -1)
-            {
-                perror("Erro no comando quit\n");
-                return -1;
-            }
             break;
         }
     }
-    return 0;
+
+    int status = rtree_disconnect(rtree);
+    if (status != 0)
+    {
+        perror("tree_client - rtree_disconnect");
+    }
+    return status;
 }

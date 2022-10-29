@@ -1,6 +1,7 @@
 #include "network_client.h"
 #include "client_stub-private.h"
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
@@ -31,32 +32,39 @@ int network_connect(struct rtree_t *rtree)
     // Cria socket TCP
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        perror("Erro ao criar socket TCP");
+        perror("network_connect");
         return -1;
     }
+
+    struct addrinfo hints = {};
+    struct addrinfo *res;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    if (getaddrinfo(rtree->address, NULL, &hints, &res) != 0)
+    {
+        perror("network_connect");
+        close(sockfd);
+        return -1;
+    }
+
+    server = *(struct sockaddr_in *)res->ai_addr;
 
     // Preenche estrutura server para estabelecer conexão
     server.sin_family = AF_INET;
     server.sin_port = htons(rtree->port);
-    if (inet_pton(AF_INET, rtree->address, &server.sin_addr) < 1)
-    {
-        perror("Erro ao converter IP");
-        close(sockfd);
-        return -1;
-    }
 
     // Estabelece conexão com o servidor definido em server
     if (connect(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)
     {
-        perror("Erro ao conectar-se ao servidor");
+        perror("network_connect");
+        freeaddrinfo(res);
         close(sockfd);
         return -1;
     }
 
-    rtree->sockfd = sockfd;
-
     signal_sigpipe();
-
+    freeaddrinfo(res);
+    rtree->sockfd = sockfd;
     return 0;
 }
 
@@ -80,7 +88,7 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
     message_t__pack(msg, buffer + offset);
     if ((nbytes = write(sockfd, buffer, len + offset)) != len + offset)
     {
-        perror("network_send_receive - write");
+        printf("Erro a enviar dados para o servidor.");
         close(sockfd);
         return NULL;
     }
@@ -88,33 +96,33 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
     // Ler tamanho de buffer a alocar
     if ((nbytes = read(sockfd, &len, offset)) != offset)
     {
-        perror("network_send_receive - read");
+        printf("Erro a receber dados do servidor.");
         close(sockfd);
         return NULL;
     }
 
     if (len <= 0)
     {
-        perror("network_send_receive - invalid buffer size received");
+        printf("Tamanho de buffer pedido inválido: %d\n", len);
         close(sockfd);
         return NULL;
     }
 
     if ((buffer = realloc(buffer, len)) == NULL)
     {
-        perror("network_send_receive - realloc");
+        perror("network_send_receive");
         close(sockfd);
         return NULL;
     }
 
     if ((nbytes = read(sockfd, buffer, len)) != len)
     {
-        perror("network_send_receive");
+        printf("Erro a receber dados do servidor.");
         close(sockfd);
         return NULL;
     }
-    // De-serializar mensagem recebida
-    msg = message_t__unpack(NULL, nbytes, buffer); // ? Argumentos certos
+
+    msg = message_t__unpack(NULL, nbytes, buffer);
     free(buffer);
     return msg;
 }
