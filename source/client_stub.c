@@ -7,19 +7,17 @@
 struct rtree_t *rtree_connect(const char *address_port)
 {
     struct rtree_t *rtree;
-    char address_port_copy[strlen(address_port) + 1];
-    strcpy(address_port_copy, address_port); // 'strtok' discards 'const'
-    char *address = strtok(address_port_copy, ":");
-    if (address == NULL)
+    char *address;
+    u_int16_t port;
+
+    char *sep = strchr(address_port, ':');
+    if (sep == NULL)
     {
         return NULL;
     }
-    char *token = strtok(NULL, ":");
-    if (token == NULL)
-    {
-        return NULL;
-    }
-    u_int16_t port = atoi(token);
+
+    address = strndup(address_port, sep - address_port);
+    port = atoi(sep + 1);
     if (port <= 0)
     {
         return NULL;
