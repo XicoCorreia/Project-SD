@@ -31,6 +31,17 @@ message message_t
     bytes data = 3;
 };
 
+message data_t
+{
+    bytes data = 1;
+}
+
+message entry_t
+{
+    string key = 1;
+    bytes value = 2;
+}
+
 message keys_t
 {
     repeated string keys = 1;

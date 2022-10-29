@@ -52,6 +52,96 @@ void   message_t__free_unpacked
   assert(message->base.descriptor == &message_t__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   data_t__init
+                     (DataT         *message)
+{
+  static const DataT init_value = DATA_T__INIT;
+  *message = init_value;
+}
+size_t data_t__get_packed_size
+                     (const DataT *message)
+{
+  assert(message->base.descriptor == &data_t__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t data_t__pack
+                     (const DataT *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &data_t__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t data_t__pack_to_buffer
+                     (const DataT *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &data_t__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+DataT *
+       data_t__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (DataT *)
+     protobuf_c_message_unpack (&data_t__descriptor,
+                                allocator, len, data);
+}
+void   data_t__free_unpacked
+                     (DataT *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &data_t__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   entry_t__init
+                     (EntryT         *message)
+{
+  static const EntryT init_value = ENTRY_T__INIT;
+  *message = init_value;
+}
+size_t entry_t__get_packed_size
+                     (const EntryT *message)
+{
+  assert(message->base.descriptor == &entry_t__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t entry_t__pack
+                     (const EntryT *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &entry_t__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t entry_t__pack_to_buffer
+                     (const EntryT *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &entry_t__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+EntryT *
+       entry_t__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (EntryT *)
+     protobuf_c_message_unpack (&entry_t__descriptor,
+                                allocator, len, data);
+}
+void   entry_t__free_unpacked
+                     (EntryT *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &entry_t__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   keys_t__init
                      (KeysT         *message)
 {
@@ -286,6 +376,95 @@ const ProtobufCMessageDescriptor message_t__descriptor =
   message_t__field_indices_by_name,
   1,  message_t__number_ranges,
   (ProtobufCMessageInit) message_t__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor data_t__field_descriptors[1] =
+{
+  {
+    "data",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(DataT, data),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned data_t__field_indices_by_name[] = {
+  0,   /* field[0] = data */
+};
+static const ProtobufCIntRange data_t__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor data_t__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "data_t",
+  "DataT",
+  "DataT",
+  "",
+  sizeof(DataT),
+  1,
+  data_t__field_descriptors,
+  data_t__field_indices_by_name,
+  1,  data_t__number_ranges,
+  (ProtobufCMessageInit) data_t__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor entry_t__field_descriptors[2] =
+{
+  {
+    "key",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(EntryT, key),
+    NULL,
+    &protobuf_c_empty_string,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "value",
+    2,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(EntryT, value),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned entry_t__field_indices_by_name[] = {
+  0,   /* field[0] = key */
+  1,   /* field[1] = value */
+};
+static const ProtobufCIntRange entry_t__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor entry_t__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "entry_t",
+  "EntryT",
+  "EntryT",
+  "",
+  sizeof(EntryT),
+  2,
+  entry_t__field_descriptors,
+  entry_t__field_indices_by_name,
+  1,  entry_t__number_ranges,
+  (ProtobufCMessageInit) entry_t__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor keys_t__field_descriptors[1] =
