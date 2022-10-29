@@ -8,7 +8,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-int MAX_MSG = 4096;
 int sockfd;
 
 // Função que faz com que o sinal SIGPIPE seja ignorado.
@@ -68,13 +67,13 @@ int network_main_loop(int listening_socket)
 
     signal_sigpipe();
 
-    struct sockaddr_in my_soc;
-    socklen_t addr_size;
-    int csock;
+    struct sockaddr_in *my_soc = malloc(sizeof(struct sockaddr_in));
+    socklen_t addr_size = 0;
+    int csock = 0;
 
-    // ! accept devolve -1 em caso de erro, lidar?
     while ((csock = accept(listening_socket, (struct sockaddr *)&my_soc, &addr_size)) != -1)
     {
+        printf("Connection received!\n");
         MessageT *msg = network_receive(csock);
         int res;
         if ((res = invoke(msg)) != 0)
@@ -90,8 +89,16 @@ int network_main_loop(int listening_socket)
         if (close(csock) < 0)
         {
             perror("network_main_loop");
+            free(my_soc);
             return -1;
         }
+    }
+
+    free(my_soc);
+    if (csock == -1)
+    {
+        perror("network_main_loop");
+        return -1;
     }
 
     return 0;
@@ -99,40 +106,67 @@ int network_main_loop(int listening_socket)
 
 MessageT *network_receive(int client_socket)
 {
-    void *buffer = malloc(MAX_MSG);
+    int len, nbytes;
+    void *buffer;
+
+    nbytes = read(client_socket, &len, sizeof(int));
+    if (nbytes != sizeof(int))
+    {
+        perror("network_receive - read");
+        return NULL;
+    }
+
+    if (len <= 0)
+    {
+        perror("network_receive - invalid buffer size received");
+        close(client_socket);
+        return NULL;
+    }
+
+    buffer = malloc(len);
     if (buffer == NULL)
     {
-        perror("network_receive");
+        perror("network_receive - malloc");
         return NULL;
     }
-    int size = read(client_socket, buffer, MAX_MSG); // read_all
-    if (size < 0)
+
+    nbytes = read(client_socket, buffer, len); // read_all
+    if (nbytes != len)
     {
-        perror("network_receive");
+        perror("network_receive - read");
         return NULL;
     }
-    MessageT *msg = message_t__unpack(NULL, size, buffer);
+
+    MessageT *msg = message_t__unpack(NULL, nbytes, buffer);
     free(buffer);
     return msg;
 }
 
 int network_send(int client_socket, MessageT *msg)
 {
+    int nbytes;
     int len = message_t__get_packed_size(msg);
-    void *buffer = malloc(len);
+    int offset = sizeof(int);
+    void *buffer;
+
+    buffer = malloc(len + offset);
     if (buffer == NULL)
     {
         perror("network_send");
         return -1;
     }
-    message_t__pack(msg, buffer);
+
+    // Serializar e enviar a mensagem
+    memcpy(buffer, &len, offset);
+    message_t__pack(msg, buffer + offset);
     message_t__free_unpacked(msg, NULL);
-    int size = write(client_socket, buffer, len); // write_all
-    if (size != len)
+    if ((nbytes = write(client_socket, buffer, len + offset)) != len + offset)
     {
-        perror("network_send");
+        perror("network_send - write");
+        close(client_socket);
         return -1;
     }
+
     free(buffer);
     return 0;
 }

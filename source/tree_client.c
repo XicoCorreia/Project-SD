@@ -5,14 +5,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+size_t MAX_KEY = 2048; //
+size_t MAX_VAL = 32768;
+
 int main(int argc, char const *argv[])
 {
     struct rtree_t *rtree = rtree_connect(argv[1]); // ! Verificar argumentos
 
     while (true)
     {
-        char str[50];
-        fgets(str, sizeof(str), stdin);
+        char str[MAX_KEY];
+        fgets(str, MAX_KEY, stdin);
         str[strlen(str) - 1] = '\0';
 
         char *token = strtok(str, " ");
@@ -22,7 +25,7 @@ int main(int argc, char const *argv[])
 
             token = strtok(NULL, " ");
             char *key = strdup(token);
-            char *value = malloc(sizeof(char) * 100); // ! Tem tamanho definido
+            char *value = malloc(MAX_VAL); // ! Tem tamanho definido
 
             token = strtok(NULL, " ");
             while (token != NULL)

@@ -46,9 +46,10 @@ int rtree_disconnect(struct rtree_t *rtree)
 
 int rtree_put(struct rtree_t *rtree, struct entry_t *entry)
 {
-    MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_PUT;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_ENTRY;
+    MessageT *msg = malloc(sizeof(MessageT));
+    message_t__init(msg);
+    msg->opcode = MESSAGE_T__OPCODE__OP_PUT;
+    msg->c_type = MESSAGE_T__C_TYPE__CT_ENTRY;
 
     EntryT entry_msg = ENTRY_T__INIT;
     entry_msg.key = entry->key;
@@ -56,111 +57,117 @@ int rtree_put(struct rtree_t *rtree, struct entry_t *entry)
     entry_msg.value.data = malloc(entry->value->datasize);
     memcpy(entry_msg.value.data, entry->value->data, entry->value->datasize);
 
-    msg.data.len = entry_t__pack(&entry_msg, msg.data.data);
+    msg->data.len = entry_t__pack(&entry_msg, msg->data.data);
 
-    if (network_send_receive(rtree, &msg) == NULL)
+    if ((msg = network_send_receive(rtree, msg)) == NULL)
     {
         return -1;
     }
-    int ret = *msg.data.data;
-    return msg.opcode == MESSAGE_T__OPCODE__OP_ERROR ? -1 : ret;
+    int ret = *msg->data.data;
+    return msg->opcode == MESSAGE_T__OPCODE__OP_ERROR ? -1 : ret;
 }
 
 struct data_t *rtree_get(struct rtree_t *rtree, char *key)
 {
-    MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_GET;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_KEY;
-    msg.data.len = strlen(key) + 1;
-    msg.data.data = (uint8_t *)key;
-    if (network_send_receive(rtree, &msg) == NULL)
+    MessageT *msg = malloc(sizeof(MessageT));
+    message_t__init(msg);
+    msg->opcode = MESSAGE_T__OPCODE__OP_GET;
+    msg->c_type = MESSAGE_T__C_TYPE__CT_KEY;
+    msg->data.len = strlen(key) + 1;
+    msg->data.data = (uint8_t *)key;
+    if ((msg = network_send_receive(rtree, msg)) == NULL)
     {
         return NULL;
     }
-    if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)
+    if (msg->opcode == MESSAGE_T__OPCODE__OP_ERROR)
     {
         return NULL;
     }
-    return (struct data_t *)msg.data.data;
+    return (struct data_t *)msg->data.data;
 }
 
 int rtree_del(struct rtree_t *rtree, char *key)
 {
-    MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_DEL;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_KEY;
-    msg.data.len = strlen(key) + 1;
-    msg.data.data = (uint8_t *)key;
-    if (network_send_receive(rtree, &msg) == NULL)
+    MessageT *msg = malloc(sizeof(MessageT));
+    message_t__init(msg);
+    msg->opcode = MESSAGE_T__OPCODE__OP_DEL;
+    msg->c_type = MESSAGE_T__C_TYPE__CT_KEY;
+    msg->data.len = strlen(key) + 1;
+    msg->data.data = (uint8_t *)key;
+    if ((msg = network_send_receive(rtree, msg)) == NULL)
     {
         return -1;
     }
-    int ret = *msg.data.data;
-    return msg.opcode == MESSAGE_T__OPCODE__OP_ERROR ? -1 : ret;
+    int ret = *msg->data.data;
+    return msg->opcode == MESSAGE_T__OPCODE__OP_ERROR ? -1 : ret;
 }
 
 int rtree_size(struct rtree_t *rtree)
 {
-    MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_SIZE;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
-    msg.data.len = 0;
-    msg.data.data = NULL;
-    if (network_send_receive(rtree, &msg) == NULL)
+    MessageT *msg = malloc(sizeof(MessageT));
+    message_t__init(msg);
+    msg->opcode = MESSAGE_T__OPCODE__OP_SIZE;
+    msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+    msg->data.len = 0;
+    msg->data.data = NULL;
+    if ((msg = network_send_receive(rtree, msg)) == NULL)
     {
         return -1;
     }
-    int ret = *msg.data.data;
-    return msg.opcode == MESSAGE_T__OPCODE__OP_ERROR ? -1 : ret;
+    int ret = *msg->data.data;
+    return msg->opcode == MESSAGE_T__OPCODE__OP_ERROR ? -1 : ret;
 }
 
 int rtree_height(struct rtree_t *rtree)
 {
-    MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_HEIGHT;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
-    msg.data.len = 0;
-    msg.data.data = NULL;
-    if (network_send_receive(rtree, &msg) == NULL)
+    MessageT *msg = malloc(sizeof(MessageT));
+    message_t__init(msg);
+    msg->opcode = MESSAGE_T__OPCODE__OP_HEIGHT;
+    msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+    msg->data.len = 0;
+    msg->data.data = NULL;
+    if ((msg = network_send_receive(rtree, msg)) == NULL)
     {
         return -1;
     }
-    int ret = *msg.data.data;
-    return msg.opcode == MESSAGE_T__OPCODE__OP_ERROR ? -1 : ret;
+    int ret = *msg->data.data;
+    return msg->opcode == MESSAGE_T__OPCODE__OP_ERROR ? -1 : ret;
 }
 
 char **rtree_get_keys(struct rtree_t *rtree)
 {
-    MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_GETKEYS;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
-    msg.data.len = 0;
-    msg.data.data = NULL;
-    if (network_send_receive(rtree, &msg) == NULL)
+    MessageT *msg = malloc(sizeof(MessageT));
+    message_t__init(msg);
+    msg->opcode = MESSAGE_T__OPCODE__OP_GETKEYS;
+    msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+    msg->data.len = 0;
+    msg->data.data = NULL;
+    if ((msg = network_send_receive(rtree, msg)) == NULL)
     {
         return NULL;
     }
-    if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)
+    if (msg->opcode == MESSAGE_T__OPCODE__OP_ERROR)
     {
         return NULL;
     }
-    return (char **)msg.data.data;
+    return (char **)msg->data.data;
 }
 
 void **rtree_get_values(struct rtree_t *rtree)
 {
-    MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_GETVALUES;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
-    msg.data.len = 0;
-    msg.data.data = NULL;
-    if (network_send_receive(rtree, &msg) == NULL)
+    MessageT *msg = malloc(sizeof(MessageT));
+    message_t__init(msg);
+    msg->opcode = MESSAGE_T__OPCODE__OP_GETVALUES;
+    msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+    msg->data.len = 0;
+    msg->data.data = NULL;
+    if ((msg = network_send_receive(rtree, msg)) == NULL)
     {
         return NULL;
     }
-    if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)
+    if (msg->opcode == MESSAGE_T__OPCODE__OP_ERROR)
     {
         return NULL;
     }
-    return (void **)msg.data.data;
+    return (void **)msg->data.data;
 }

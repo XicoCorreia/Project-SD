@@ -64,30 +64,58 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
 {
     int sockfd = rtree->sockfd;
     int nbytes;
-
-    // Serializar mensagem
     int len = message_t__get_packed_size(msg);
-    void *buf = malloc(len);
-    message_t__pack(msg, buf);
+    int offset = sizeof(int);
+    void *buffer;
 
-    // Enviar mensagem para o servidor
-    if ((nbytes = write(sockfd, msg, len)) != len)
+    buffer = malloc(len + offset);
+    if (buffer == NULL)
     {
-        perror("Erro ao enviar os dados");
+        perror("network_send");
+        return NULL;
+    }
+
+    // Serializar e enviar a mensagem
+    memcpy(buffer, &len, offset);
+    message_t__pack(msg, buffer + offset);
+    if ((nbytes = write(sockfd, buffer, len + offset)) != len + offset)
+    {
+        perror("network_send_receive - write");
         close(sockfd);
         return NULL;
     }
-    // ! realloc buf com size = MAX_MSG
-    // Ler mensagem do servidor
-    if ((nbytes = read(sockfd, buf, len)) != len) // ! MAX_MSG
+
+    // Ler tamanho de buffer a alocar
+    if ((nbytes = read(sockfd, &len, offset)) != offset)
     {
-        perror("Erro ao receber dados");
+        perror("network_send_receive - read");
+        close(sockfd);
+        return NULL;
+    }
+
+    if (len <= 0)
+    {
+        perror("network_send_receive - invalid buffer size received");
+        close(sockfd);
+        return NULL;
+    }
+
+    if ((buffer = realloc(buffer, len)) == NULL)
+    {
+        perror("network_send_receive - realloc");
+        close(sockfd);
+        return NULL;
+    }
+
+    if ((nbytes = read(sockfd, buffer, len)) != len)
+    {
+        perror("network_send_receive");
         close(sockfd);
         return NULL;
     }
     // De-serializar mensagem recebida
-    msg = message_t__unpack(NULL, nbytes, buf); // ? Argumentos certos
-    free(buf);
+    msg = message_t__unpack(NULL, nbytes, buffer); // ? Argumentos certos
+    free(buffer);
     return msg;
 }
 
