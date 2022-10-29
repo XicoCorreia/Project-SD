@@ -8,3 +8,4 @@ object/*
 
 # VSCode settings
 .vscode/*
+!.vscode/launch.json
