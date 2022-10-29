@@ -78,7 +78,8 @@ int network_main_loop(int listening_socket)
             MessageT *msg = network_receive(connsockfd);
             if (msg == NULL)
             {
-                printf("Foi fechada a ligação com o cliente.");
+                printf("Foi fechada a ligação com o cliente.\n");
+                break;
             }
             int res;
             if ((res = invoke(msg)) != 0)

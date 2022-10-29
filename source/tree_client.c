@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-size_t MAX_KEY = 2048; //
+size_t MAX_KEY = 2048;
 size_t MAX_VAL = 32768;
 
 int main(int argc, char const *argv[])
@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
 
             token = strtok(NULL, " ");
             char *key = strdup(token);
-            char *value = malloc(MAX_VAL); // ! Tem tamanho definido
+            char *value = malloc(MAX_VAL);
 
             token = strtok(NULL, " ");
             while (token != NULL)
@@ -149,7 +149,7 @@ int main(int argc, char const *argv[])
     int status = rtree_disconnect(rtree);
     if (status != 0)
     {
-        perror("tree_client - rtree_disconnect");
+        perror("tree_client");
     }
     return status;
 }
