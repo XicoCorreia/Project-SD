@@ -70,6 +70,7 @@ int network_connect(struct rtree_t *rtree)
 
 MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
 {
+    MessageT *result;
     int sockfd = rtree->sockfd;
     int nbytes;
     int len = message_t__get_packed_size(msg);
@@ -122,7 +123,9 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
         return NULL;
     }
 
-    msg = message_t__unpack(NULL, nbytes, buffer);
+    result = message_t__unpack(NULL, nbytes, buffer);
+    *msg = *result;
+    free(result);
     free(buffer);
     return msg;
 }

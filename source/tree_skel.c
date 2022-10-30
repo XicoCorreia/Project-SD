@@ -34,7 +34,7 @@ int invoke(MessageT *msg)
         int size = tree_size(tree);
         msg->data.len = sizeof(int);
         msg->data.data = malloc(sizeof(int));
-        *msg->data.data = size;
+        *((int *)msg->data.data) = size;
         msg->opcode = MESSAGE_T__OPCODE__OP_SIZE + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
         break;
@@ -43,7 +43,7 @@ int invoke(MessageT *msg)
         int height = tree_height(tree);
         msg->data.len = sizeof(int);
         msg->data.data = malloc(sizeof(int));
-        *msg->data.data = height;
+        *((int *)msg->data.data) = height;
         msg->opcode = MESSAGE_T__OPCODE__OP_HEIGHT + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
         break;
