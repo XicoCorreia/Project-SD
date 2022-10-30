@@ -54,7 +54,9 @@ int rtree_put(struct rtree_t *rtree, struct entry_t *entry)
     entry_msg.value.data = malloc(entry->value->datasize);
     memcpy(entry_msg.value.data, entry->value->data, entry->value->datasize);
 
-    msg.data.len = entry_t__pack(&entry_msg, msg.data.data);
+    msg.data.len = entry_t__get_packed_size(&entry_msg);
+    msg.data.data = malloc(entry_t__get_packed_size(&entry_msg));
+    entry_t__pack(&entry_msg, msg.data.data);
 
     if (network_send_receive(rtree, &msg) == NULL)
     {

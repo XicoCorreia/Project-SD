@@ -33,21 +33,15 @@ int main(int argc, char const *argv[])
 
         if (strcmp(token, "put") == 0)
         {
+            char *key, *value;
 
             token = strtok(NULL, " ");
-            char *key = strdup(token);
-            char *value = malloc(MAX_VAL);
+            key = strdup(token);
 
-            token = strtok(NULL, " ");
-            while (token != NULL)
-            {
-                strcat(value, token);
-                token = strtok(NULL, " ");
-                if (token != NULL)
-                    strcat(value, " ");
-            }
+            token = strtok(NULL, "\0");
+            value = strdup(token);
 
-            struct data_t *data = data_create2(strlen(value), value);
+            struct data_t *data = data_create2(strlen(value) + 1, value);
             struct entry_t *entry = entry_create(key, data);
 
             int i = rtree_put(rtree, entry);
