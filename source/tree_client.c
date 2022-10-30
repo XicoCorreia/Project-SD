@@ -1,3 +1,10 @@
+/**
+ * Grupo: SD-048
+ * Autores:
+ *   Francisco Correia - fc54685
+ *   Alexandre Fonseca - fc55955
+ *   Filipe Egipto - fc56272
+ */
 #include <client_stub-private.h>
 #include <client_stub.h>
 #include <stdbool.h>
