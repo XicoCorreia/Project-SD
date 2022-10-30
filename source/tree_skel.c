@@ -26,6 +26,7 @@ void tree_skel_destroy()
 int invoke(MessageT *msg)
 {
     int status;
+    char *key;
     struct data_t *value;
 
     switch (msg->opcode)
@@ -49,14 +50,15 @@ int invoke(MessageT *msg)
         break;
 
     case MESSAGE_T__OPCODE__OP_DEL:
-        status = tree_del(tree, (char *)msg->data.data);
-        free(msg->data.data);
+        key = (char *)msg->data.data;
+        status = tree_del(tree, key);
 
         if (status < 0)
         {
-            printf("del: Chave '%s' nao encontrada.\n", (char *)msg->data.data);
+            printf("del: Chave '%s' nao encontrada.\n", key);
         }
 
+        free(msg->data.data);
         msg->data.len = 0;
         msg->data.data = NULL;
         msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
@@ -64,21 +66,23 @@ int invoke(MessageT *msg)
         break;
 
     case MESSAGE_T__OPCODE__OP_GET:
-        value = tree_get(tree, (char *)msg->data.data);
-        free(msg->data.data);
+        key = (char *)msg->data.data;
+        value = tree_get(tree, key);
 
         if (value == NULL)
         {
+            printf("get: Chave '%s' nao encontrada.\n", key);
             value = calloc(1, sizeof(struct data_t)); // size=0, data=NULL
         }
 
+        free(msg->data.data);
         DataT data = DATA_T__INIT;
         data.data.len = value->datasize;
         data.data.data = value->data;
         msg->data.len = data_t__get_packed_size(&data);
         msg->data.data = malloc(msg->data.len);
         data_t__pack(&data, msg->data.data);
-        data_t__free_unpacked(&data, NULL);
+        data_destroy(value);
         msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_VALUE;
         break;
