@@ -12,7 +12,7 @@
 
 No diretório de raíz do projeto, correr o seguinte:
 
-```bash
+```shell
 $ make
 $ tree-server <port>
 $ tree-client <server>:<port>
@@ -31,8 +31,8 @@ Nota: Não foi incluído o ficheiro `tree.c`, portanto terá de ser colocado na 
 
 Alternativamente pode ser usado o ficheiro `tree.o`, copiando-o da raíz para `./object`:
 
-```bash
-cp tree_fornecido.o object/tree.o && make
+```shell
+$ cp tree_fornecido.o object/tree.o && make
 ```
 
 ### Comandos do cliente
