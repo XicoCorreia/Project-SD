@@ -131,7 +131,10 @@ char **tree_get_keys(struct tree_t *tree)
     char **keys = malloc(sizeof(char *) * (size + 1));
     int count = 0;
 
-    inorder_keys(tree, keys, &count);
+    if (size > 0)
+    {
+        inorder_keys(tree, keys, &count);
+    }
     keys[size] = NULL;
 
     return keys;
@@ -143,7 +146,10 @@ void **tree_get_values(struct tree_t *tree)
     struct data_t **values = malloc(sizeof(struct data_t *) * (size + 1));
     int count = 0;
 
-    inorder_values(tree, values, &count);
+    if (size > 0)
+    {
+        inorder_values(tree, values, &count);
+    }
     values[size] = NULL;
 
     return (void **)values;

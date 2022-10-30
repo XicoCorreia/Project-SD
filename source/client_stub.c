@@ -1,6 +1,7 @@
 #include "client_stub.h"
 #include "client_stub-private.h"
 #include "network_client.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -79,6 +80,9 @@ int rtree_put(struct rtree_t *rtree, struct entry_t *entry)
 struct data_t *rtree_get(struct rtree_t *rtree, char *key)
 {
     MessageT msg = MESSAGE_T__INIT;
+    DataT *result;
+    struct data_t *data;
+
     msg.opcode = MESSAGE_T__OPCODE__OP_GET;
     msg.c_type = MESSAGE_T__C_TYPE__CT_KEY;
     msg.data.len = strlen(key) + 1;
@@ -91,7 +95,12 @@ struct data_t *rtree_get(struct rtree_t *rtree, char *key)
     {
         return NULL;
     }
-    return (struct data_t *)msg.data.data;
+    result = data_t__unpack(NULL, msg.data.len, msg.data.data);
+    data = malloc(sizeof(struct data_t));
+    data->datasize = result->data.len;
+    data->data = result->data.data;
+    free(result);
+    return data;
 }
 
 int rtree_del(struct rtree_t *rtree, char *key)
@@ -155,6 +164,8 @@ int rtree_height(struct rtree_t *rtree)
 char **rtree_get_keys(struct rtree_t *rtree)
 {
     MessageT msg = MESSAGE_T__INIT;
+    KeysT *result;
+    char **keys;
     msg.opcode = MESSAGE_T__OPCODE__OP_GETKEYS;
     msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
     msg.data.len = 0;
@@ -167,12 +178,25 @@ char **rtree_get_keys(struct rtree_t *rtree)
     {
         return NULL;
     }
-    return (char **)msg.data.data;
+    result = keys_t__unpack(NULL, msg.data.len, msg.data.data);
+    keys = result->keys;
+    free(result);
+    if (keys == NULL) // sem erro mas 0 chaves na tree
+    {
+        keys = calloc(1, sizeof(char *));
+        if (keys == NULL)
+        {
+            perror("rtree_get_keys");
+        }
+    }
+    return keys;
 }
 
 void **rtree_get_values(struct rtree_t *rtree)
 {
     MessageT msg = MESSAGE_T__INIT;
+    ValuesT *result;
+    struct data_t **values;
     msg.opcode = MESSAGE_T__OPCODE__OP_GETVALUES;
     msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
     msg.data.len = 0;
@@ -185,5 +209,16 @@ void **rtree_get_values(struct rtree_t *rtree)
     {
         return NULL;
     }
-    return (void **)msg.data.data;
+    result = values_t__unpack(NULL, msg.data.len, msg.data.data);
+    values = (struct data_t **)result->values;
+    free(result);
+    if (values == NULL) // sem erro mas 0 valores na tree
+    {
+        values = calloc(1, sizeof(void *));
+        if (values == NULL)
+        {
+            perror("rtree_get_values");
+        }
+    }
+    return (void **)values;
 }

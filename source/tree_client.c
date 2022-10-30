@@ -30,6 +30,11 @@ int main(int argc, char const *argv[])
         str[strlen(str) - 1] = '\0';
 
         char *token = strtok(str, " ");
+        if (token == NULL)
+        {
+            printf("Comando nao reconhecido. Tente novamente.\n");
+            continue;
+        }
 
         if (strcmp(token, "put") == 0)
         {
@@ -60,6 +65,24 @@ int main(int argc, char const *argv[])
             {
                 printf("Erro no comando 'get'.\n");
             }
+            else if (data->datasize == 0)
+            {
+                printf("Nao existe entrada associada a chave '%s'.\n", key);
+            }
+            else
+            {
+                printf("'%s': ", key);
+                char *value = (char *)data->data;
+                if (value[data->datasize - 1] == '\0')
+                {
+                    printf("'%s'\n", value); // imprime dados null-terminated
+                }
+                else
+                {
+                    printf("Tipo desconhecido (%d bytes)\n", data->datasize);
+                }
+            }
+            data_destroy(data);
         }
         else if (strcmp(token, "del") == 0)
         {
@@ -68,6 +91,10 @@ int main(int argc, char const *argv[])
             if (i == -1)
             {
                 printf("Erro no comando 'del'.\n");
+            }
+            else
+            {
+                printf("Removida a entrada '%s'\n", key);
             }
         }
         else if (strcmp(token, "size") == 0)
@@ -79,7 +106,7 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                printf("%d\n", size);
+                printf("Tamanho: %d\n", size);
             }
         }
         else if (strcmp(token, "height") == 0)
@@ -91,7 +118,7 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                printf("%d\n", height);
+                printf("Altura: %d\n", height);
             }
         }
         else if (strcmp(token, "getkeys") == 0)
@@ -99,7 +126,7 @@ int main(int argc, char const *argv[])
             char **keys = rtree_get_keys(rtree);
             if (keys == NULL)
             {
-                perror("(tree_client) rtree_get_keys");
+                printf("Erro no comando 'getkeys'.\n");
             }
             else if (keys[0] != NULL)
             {
@@ -120,7 +147,7 @@ int main(int argc, char const *argv[])
             struct data_t **values = (struct data_t **)rtree_get_values(rtree);
             if (values == NULL)
             {
-                perror("(tree_client) rtree_get_values");
+                printf("Erro no comando 'getvalues'.\n");
             }
             else if (values[0] != NULL)
             {
@@ -139,6 +166,10 @@ int main(int argc, char const *argv[])
         else if (strcmp(token, "quit") == 0 || strcmp(token, "exit") == 0)
         {
             break;
+        }
+        else
+        {
+            printf("Comando nao reconhecido. Tente novamente.\n");
         }
     }
 
