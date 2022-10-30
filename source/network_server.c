@@ -66,13 +66,13 @@ int network_main_loop(int listening_socket)
 
     signal_sigpipe();
 
-    struct sockaddr_in *my_soc = malloc(sizeof(struct sockaddr_in));
-    socklen_t addr_size = 0;
+    struct sockaddr_in my_soc = {0};
+    socklen_t addr_size = sizeof my_soc;
     int connsockfd = 0;
 
     while ((connsockfd = accept(listening_socket, (struct sockaddr *)&my_soc, &addr_size)) != -1)
     {
-        printf("Ligação estabelecida com o cliente '%s:%d'\n", inet_ntoa(my_soc->sin_addr), my_soc->sin_port);
+        printf("Ligação estabelecida com o cliente '%s:%d'\n", inet_ntoa(my_soc.sin_addr), my_soc.sin_port);
         while (true)
         {
             MessageT *msg = network_receive(connsockfd);
@@ -95,7 +95,6 @@ int network_main_loop(int listening_socket)
         }
     }
 
-    free(my_soc);
     if (connsockfd < 0 || close(connsockfd) < 0)
     {
         perror("network_main_loop");
