@@ -96,6 +96,16 @@ struct data_t *tree_get(struct tree_t *tree, char *key)
 
 int tree_del(struct tree_t *tree, char *key)
 {
+    if (tree == NULL || tree->entry == NULL)
+    {
+        return -1;
+    }
+    else if (strcmp(key, tree->entry->key) == 0)
+    {
+        entry_destroy(tree->entry);
+        tree->entry = NULL;
+        return 0;
+    }
     int ret = 0;
     tree_del_aux(tree, key, &ret);
     return ret;

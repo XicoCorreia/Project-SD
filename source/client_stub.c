@@ -96,6 +96,7 @@ struct data_t *rtree_get(struct rtree_t *rtree, char *key)
         return NULL;
     }
     result = data_t__unpack(NULL, msg.data.len, msg.data.data);
+    free(msg.data.data);
     data = malloc(sizeof(struct data_t));
     data->datasize = result->data.len;
     data->data = result->data.data;
