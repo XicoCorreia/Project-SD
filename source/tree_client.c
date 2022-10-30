@@ -41,9 +41,19 @@ int main(int argc, char const *argv[])
             char *key, *value;
 
             token = strtok(NULL, " ");
+            if (token == NULL)
+            {
+                printf("Erro a ler argumentos.\n");
+                continue;
+            }
             key = strdup(token);
 
             token = strtok(NULL, "\0");
+            if (token == NULL)
+            {
+                printf("Erro a ler argumentos.\n");
+                continue;
+            }
             value = strdup(token);
 
             struct data_t *data = data_create2(strlen(value) + 1, value);
@@ -60,6 +70,12 @@ int main(int argc, char const *argv[])
         else if (strcmp(token, "get") == 0)
         {
             char *key = strtok(NULL, " ");
+            if (key == NULL)
+            {
+                printf("Erro a ler argumentos.\n");
+                continue;
+            }
+
             struct data_t *data = rtree_get(rtree, key);
             if (data == NULL)
             {
@@ -87,6 +103,12 @@ int main(int argc, char const *argv[])
         else if (strcmp(token, "del") == 0)
         {
             char *key = strtok(NULL, " ");
+            if (key == NULL)
+            {
+                printf("Erro a ler argumentos.\n");
+                continue;
+            }
+
             int i = rtree_del(rtree, key);
             if (i == -1)
             {
@@ -141,6 +163,7 @@ int main(int argc, char const *argv[])
             {
                 printf("Arvore vazia.\n");
             }
+            rtree_free_keys(keys);
         }
         else if (strcmp(token, "getvalues") == 0)
         {
@@ -162,6 +185,7 @@ int main(int argc, char const *argv[])
             {
                 printf("Arvore vazia.\n");
             }
+            rtree_free_values((void **)values);
         }
         else if (strcmp(token, "quit") == 0 || strcmp(token, "exit") == 0)
         {

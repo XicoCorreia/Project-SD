@@ -228,3 +228,25 @@ void **rtree_get_values(struct rtree_t *rtree)
     free(result);
     return (void **)values;
 }
+
+void rtree_free_keys(char **keys)
+{
+    int count = 0;
+    while (keys[count] != NULL)
+    {
+        free(keys[count]);
+        count++;
+    }
+    free(keys);
+}
+
+void rtree_free_values(void **values)
+{
+    int count = 0;
+    while (values[count] != NULL)
+    {
+        free(values[count]);
+        count++;
+    }
+    free(values);
+}
