@@ -5,8 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-size_t MAX_KEY = 2048;
-size_t MAX_VAL = 32768;
+size_t LINE_SIZE = 2048;
 
 int main(int argc, char const *argv[])
 {
@@ -25,8 +24,8 @@ int main(int argc, char const *argv[])
 
     while (true)
     {
-        char str[MAX_KEY];
-        fgets(str, MAX_KEY, stdin);
+        char str[LINE_SIZE];
+        fgets(str, LINE_SIZE, stdin);
         str[strlen(str) - 1] = '\0';
 
         char *token = strtok(str, " ");
