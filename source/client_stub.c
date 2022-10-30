@@ -179,16 +179,17 @@ char **rtree_get_keys(struct rtree_t *rtree)
         return NULL;
     }
     result = keys_t__unpack(NULL, msg.data.len, msg.data.data);
-    keys = result->keys;
-    free(result);
-    if (keys == NULL) // sem erro mas 0 chaves na tree
+    keys = malloc(sizeof(char *) * (result->n_keys + 1)); // +1 para NULL
+
+    if (keys == NULL)
     {
-        keys = calloc(1, sizeof(char *));
-        if (keys == NULL)
-        {
-            perror("rtree_get_keys");
-        }
+        perror("rtree_get_keys");
+        free(result);
+        return NULL;
     }
+    memcpy(keys, result->keys, sizeof(char *) * result->n_keys);
+    keys[result->n_keys] = NULL;
+    free(result);
     return keys;
 }
 
@@ -210,15 +211,20 @@ void **rtree_get_values(struct rtree_t *rtree)
         return NULL;
     }
     result = values_t__unpack(NULL, msg.data.len, msg.data.data);
-    values = (struct data_t **)result->values;
-    free(result);
-    if (values == NULL) // sem erro mas 0 valores na tree
+    values = malloc(sizeof(struct data_t *) * (result->n_values + 1)); // +1 para NULL
+
+    if (values == NULL)
     {
-        values = calloc(1, sizeof(void *));
-        if (values == NULL)
-        {
-            perror("rtree_get_values");
-        }
+        perror("rtree_get_keys");
+        free(result);
+        return NULL;
     }
+
+    for (int i = 0; i < result->n_values; i++)
+    {
+        values[i] = data_create2(result->values[i].len, result->values[i].data);
+    }
+    values[result->n_values] = NULL;
+    free(result);
     return (void **)values;
 }
