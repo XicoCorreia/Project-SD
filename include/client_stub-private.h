@@ -2,7 +2,6 @@
 #define _CLIENT_STUB_PRIVATE_H
 
 #include "client_stub.h"
-#include "tree.h"
 #include <sys/types.h>
 
 struct rtree_t
