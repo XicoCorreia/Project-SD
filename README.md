@@ -19,5 +19,20 @@ $ tree-client <server>:<port>
 Onde `server` é o endereço IP ou nome do servidor da árvore,
 e `port` é o número do porto TCP onde o servidor está à espera de ligações.
 
-Para remover os ficheiros produzidos pelo compilador basta correr `make clean`.  
-Também remove, quando aplicável, o ficheiro .zip produzido por `make zip`.
+Alvos do Makefile:
+
+- `make [default]:` compila o cliente `tree-client` e o servidor `tree-server`
+- `make proto`: produz os ficheiros `sdmessage.pb-c.c/.h` do ficheiro `.proto`
+- `make clean`: limpa os ficheiros produzidos pelo compilador
+- `make zip`: produz um ficheiro de arquivos para entrega do projeto
+
+### Comandos do cliente
+
+- `put <key> <data>`: cria ou substitui o valor `value` na entrada com a chave `key`
+- `get <key>`: obtém o valor associado à chave `value` caso exista
+- `del <key>`: apaga a entrada com a chave `key`
+- `size`: devolve o tamanho da árvore
+- `height`: devolve a altura da árvore
+- `getkeys`: devolve uma lista ordenada de todas as chaves
+- `getvalues`: devolve uma lista de todos os valores, ordenada pelas chaves respetivas
+- `quit`: termina o programa
