@@ -168,13 +168,15 @@ void tree_free_keys(char **keys)
 
 void tree_free_values(void **values)
 {
+    struct data_t **values_ptr = (struct data_t **)values;
     int count = 0;
-    while (values[count] != NULL)
+    while (values_ptr[count] != NULL)
     {
-        free(values[count]);
+        free(values_ptr[count]->data);
+        free(values_ptr[count]);
         count++;
     }
-    free(values);
+    free(values_ptr);
 }
 
 void inorder_keys(struct tree_t *tree, char **keys, int *count)

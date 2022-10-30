@@ -146,6 +146,7 @@ int invoke(MessageT *msg)
             values->values[i].data = data_arr[i]->data;
             free(data_arr[i]);
         }
+        free(data_arr);
         msg->opcode = MESSAGE_T__OPCODE__OP_GETVALUES + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_VALUES;
 

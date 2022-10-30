@@ -179,6 +179,7 @@ char **rtree_get_keys(struct rtree_t *rtree)
         return NULL;
     }
     result = keys_t__unpack(NULL, msg.data.len, msg.data.data);
+    free(msg.data.data);
     keys = malloc(sizeof(char *) * (result->n_keys + 1)); // +1 para NULL
 
     if (keys == NULL)
@@ -189,6 +190,7 @@ char **rtree_get_keys(struct rtree_t *rtree)
     }
     memcpy(keys, result->keys, sizeof(char *) * result->n_keys);
     keys[result->n_keys] = NULL;
+    free(result->keys);
     free(result);
     return keys;
 }
@@ -211,6 +213,7 @@ void **rtree_get_values(struct rtree_t *rtree)
         return NULL;
     }
     result = values_t__unpack(NULL, msg.data.len, msg.data.data);
+    free(msg.data.data);
     values = malloc(sizeof(struct data_t *) * (result->n_values + 1)); // +1 para NULL
 
     if (values == NULL)
@@ -225,6 +228,7 @@ void **rtree_get_values(struct rtree_t *rtree)
         values[i] = data_create2(result->values[i].len, result->values[i].data);
     }
     values[result->n_values] = NULL;
+    free(result->values);
     free(result);
     return (void **)values;
 }
@@ -242,11 +246,13 @@ void rtree_free_keys(char **keys)
 
 void rtree_free_values(void **values)
 {
+    struct data_t **values_ptr = (struct data_t **)values;
     int count = 0;
-    while (values[count] != NULL)
+    while (values_ptr[count] != NULL)
     {
-        free(values[count]);
+        free(values_ptr[count]->data);
+        free(values_ptr[count]);
         count++;
     }
-    free(values);
+    free(values_ptr);
 }
