@@ -1,5 +1,6 @@
 #include "network_client.h"
 #include "client_stub-private.h"
+#include "message-private.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -87,7 +88,7 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
     // Serializar e enviar a mensagem
     memcpy(buffer, &len, offset);
     message_t__pack(msg, buffer + offset);
-    if ((nbytes = write(sockfd, buffer, len + offset)) != len + offset)
+    if ((nbytes = write_all(sockfd, buffer, len + offset)) != len + offset)
     {
         printf("Erro a enviar dados para o servidor.");
         close(sockfd);
@@ -95,7 +96,7 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
     }
 
     // Ler tamanho de buffer a alocar
-    if ((nbytes = read(sockfd, &len, offset)) != offset)
+    if ((nbytes = read_all(sockfd, &len, offset)) != offset)
     {
         printf("Erro a receber dados do servidor.");
         close(sockfd);
@@ -116,7 +117,7 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
         return NULL;
     }
 
-    if ((nbytes = read(sockfd, buffer, len)) != len)
+    if ((nbytes = read_all(sockfd, buffer, len)) != len)
     {
         printf("Erro a receber dados do servidor.");
         close(sockfd);

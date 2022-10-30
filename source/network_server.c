@@ -1,4 +1,5 @@
 #include "network_server.h"
+#include "message-private.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <signal.h>
@@ -109,7 +110,7 @@ MessageT *network_receive(int client_socket)
     int len, nbytes;
     void *buffer;
 
-    nbytes = read(client_socket, &len, sizeof(int));
+    nbytes = read_all(client_socket, &len, sizeof(int));
     if (nbytes != sizeof(int))
     {
         printf("Erro a receber dados do cliente.\n");
@@ -131,7 +132,7 @@ MessageT *network_receive(int client_socket)
         return NULL;
     }
 
-    nbytes = read(client_socket, buffer, len); // read_all
+    nbytes = read_all(client_socket, buffer, len); // read_all
     if (nbytes != len)
     {
         printf("Erro a receber dados do cliente.");
@@ -161,7 +162,7 @@ int network_send(int client_socket, MessageT *msg)
     memcpy(buffer, &len, offset);
     message_t__pack(msg, buffer + offset);
     message_t__free_unpacked(msg, NULL);
-    if ((nbytes = write(client_socket, buffer, len + offset)) != len + offset)
+    if ((nbytes = write_all(client_socket, buffer, len + offset)) != len + offset)
     {
         printf("Erro a enviar dados para o cliente.");
         close(client_socket);

@@ -9,9 +9,9 @@ INC_DIR = include
 OBJ_DIR = object
 SRC_DIR = source
 
-CLIENT_OBJS = sdmessage.pb-c.o client-lib.o tree_client.o
-CLIENT_LIB_OBJS = data.o client_stub.o entry.o network_client.o
-SERVER_OBJS = sdmessage.pb-c.o data.o entry.o network_server.o tree_server.o tree_skel.o tree.o
+CLIENT_OBJS = client-lib.o tree_client.o
+CLIENT_LIB_OBJS = data.o client_stub.o entry.o message.o network_client.o sdmessage.pb-c.o
+SERVER_OBJS = sdmessage.pb-c.o data.o entry.o message.o network_server.o tree_server.o tree_skel.o tree.o
 
 # -std deve ser gnu99 ou superior para usar strdup
 # em Ubuntu 22.04 (ambiente de labs), o gcc 11 usa -std=gnu++17
@@ -24,13 +24,13 @@ vpath %.o $(OBJ_DIR)
 
 default: tree-client tree-server
 
-tree-client: proto $(CLIENT_OBJS)
+tree-client: $(CLIENT_OBJS)
 	$(CC) $(addprefix $(OBJ_DIR)/, $(CLIENT_OBJS)) -o $(BIN_DIR)/$@ $(LIBS)
 
-tree-server: proto $(SERVER_OBJS)
+tree-server: $(SERVER_OBJS)
 	$(CC) $(addprefix $(OBJ_DIR)/, $(SERVER_OBJS)) -o $(BIN_DIR)/$@ $(LIBS)
 
-client-lib.o: proto $(CLIENT_LIB_OBJS)
+client-lib.o: $(CLIENT_LIB_OBJS)
 	ld -r $(addprefix $(OBJ_DIR)/, $(CLIENT_LIB_OBJS)) -o $(OBJ_DIR)/$@
 
 %.o: $(SRC_DIR)/%.c $($@)
