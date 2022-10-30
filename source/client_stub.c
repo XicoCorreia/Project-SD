@@ -55,13 +55,20 @@ int rtree_put(struct rtree_t *rtree, struct entry_t *entry)
     memcpy(entry_msg.value.data, entry->value->data, entry->value->datasize);
 
     msg.data.len = entry_t__get_packed_size(&entry_msg);
-    msg.data.data = malloc(entry_t__get_packed_size(&entry_msg));
+    uint8_t *data = malloc(entry_t__get_packed_size(&entry_msg));
+    msg.data.data = data;
     entry_t__pack(&entry_msg, msg.data.data);
 
     if (network_send_receive(rtree, &msg) == NULL)
     {
+        free(data);
+        free(entry_msg.value.data);
         return -1;
     }
+
+    free(data);
+    free(entry_msg.value.data);
+
     if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)
     {
         return -1;

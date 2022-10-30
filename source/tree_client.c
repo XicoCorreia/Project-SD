@@ -49,6 +49,8 @@ int main(int argc, char const *argv[])
             {
                 printf("Erro no comando 'put'.\n");
             }
+
+            entry_destroy(entry);
         }
         else if (strcmp(token, "get") == 0)
         {
