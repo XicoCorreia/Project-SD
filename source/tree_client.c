@@ -14,6 +14,19 @@
 
 size_t LINE_SIZE = 2048;
 
+void print_value(struct data_t *data)
+{
+    char *str = (char *)data->data;
+    if (str[data->datasize - 1] == '\0')
+    {
+        printf("'%s'", str); // imprime dados null-terminated
+    }
+    else
+    {
+        printf("desconhecido (%d bytes)", data->datasize);
+    }
+}
+
 int main(int argc, char const *argv[])
 {
     /* Testar os argumentos de entrada */
@@ -70,7 +83,10 @@ int main(int argc, char const *argv[])
             {
                 printf("Erro no comando 'put'.\n");
             }
-
+            else
+            {
+                printf("'%s': valor inserido\n", entry->key);
+            }
             entry_destroy(entry);
         }
         else if (strcmp(token, "get") == 0)
@@ -94,15 +110,8 @@ int main(int argc, char const *argv[])
             else
             {
                 printf("'%s': ", key);
-                char *value = (char *)data->data;
-                if (value[data->datasize - 1] == '\0')
-                {
-                    printf("'%s'\n", value); // imprime dados null-terminated
-                }
-                else
-                {
-                    printf("Tipo desconhecido (%d bytes)\n", data->datasize);
-                }
+                print_value(data);
+                printf("\n");
             }
             data_destroy(data);
         }
@@ -122,7 +131,7 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                printf("Removida a entrada '%s'\n", key);
+                printf("'%s': valor removido\n", key);
             }
         }
         else if (strcmp(token, "size") == 0)
@@ -158,7 +167,7 @@ int main(int argc, char const *argv[])
             }
             else if (keys[0] != NULL)
             {
-                printf("[%s", keys[0]);
+                printf("Chaves: [%s", keys[0]);
                 for (int i = 1; keys[i] != NULL; i++)
                 {
                     printf(", %s", keys[i]);
@@ -180,10 +189,12 @@ int main(int argc, char const *argv[])
             }
             else if (values[0] != NULL)
             {
-                printf("[%s", (char *)values[0]->data);
+                printf("Valores: [");
+                print_value(values[0]);
                 for (int i = 1; values[i] != NULL; i++)
                 {
-                    printf(", %s", (char *)values[i]->data); // ! assume-se string
+                    printf(", ");
+                    print_value(values[i]);
                 }
                 printf("]\n");
             }

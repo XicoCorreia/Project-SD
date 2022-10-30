@@ -45,3 +45,7 @@ $ cp tree_fornecido.o object/tree.o && make
 - `getkeys`: devolve uma lista ordenada de todas as chaves
 - `getvalues`: devolve uma lista de todos os valores, ordenada pelas chaves respetivas
 - `quit`: termina o programa
+
+### Notas sobre o servidor
+
+Para terminar a execução de forma segura pode ser enviado o sinal SIGINT (e.g. CTRL+C).
