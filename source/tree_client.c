@@ -14,6 +14,11 @@
 
 size_t LINE_SIZE = 2048;
 
+/**
+ * Função que imprime o valor associado a uma chave.
+ * Se o valor não for passível de imprimir como string,
+ * imprime-se "desconhecido" e o tamanho do valor.
+ */
 void print_value(struct data_t *data)
 {
     char *str = (char *)data->data;
