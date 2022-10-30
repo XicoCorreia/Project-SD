@@ -11,7 +11,8 @@
 ### Compilar e executar
 
 No diretório de raíz do projeto, correr o seguinte:
-```
+
+```bash
 $ make
 $ tree-server <port>
 $ tree-client <server>:<port>
@@ -25,6 +26,14 @@ Alvos do Makefile:
 - `make proto`: produz os ficheiros `sdmessage.pb-c.c/.h` do ficheiro `.proto`
 - `make clean`: limpa os ficheiros produzidos pelo compilador
 - `make zip`: produz um ficheiro de arquivos para entrega do projeto
+
+Nota: Não foi incluído o ficheiro `tree.c`, portanto terá de ser colocado na pasta `./source`.
+
+Alternativamente pode ser usado o ficheiro `tree.o`, copiando-o da raíz para `./object`:
+
+```bash
+cp tree_fornecido.o object/tree.o && make
+```
 
 ### Comandos do cliente
 

@@ -8,7 +8,6 @@
 #include "tree_skel.h"
 #include "entry.h"
 #include "string.h"
-#include "tree-private.h"
 #include "tree.h"
 #include <stdio.h>
 #include <stdlib.h>
