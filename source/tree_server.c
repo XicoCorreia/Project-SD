@@ -25,12 +25,8 @@ int main(int argc, char const *argv[])
     {
         tree_skel_init();
         int result = network_main_loop(socket_de_escuta);
+        result &= network_server_close();
         tree_skel_destroy();
-        int close = network_server_close();
-        if (close != 0)
-        {
-            return close;
-        }
         return result;
     }
     return -1;

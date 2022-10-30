@@ -20,22 +20,18 @@
 
 int sockfd;
 
-// Função que faz com que o sinal SIGPIPE seja ignorado.
-void signal_sigpipe()
+void sigint_handler()
 {
-    struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
-    sa.sa_flags = 0;
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGPIPE, &sa, NULL) == -1)
-    {
-        perror("signal_sigpipe");
-        exit(EXIT_FAILURE);
-    }
+    printf("\nProcesso interrompido!\n");
+    int result = network_server_close();
+    tree_skel_destroy();
+    exit(result);
 }
 
 int network_server_init(short port)
 {
+    signal_sigint(NULL); // ignora sinais SIGINT (e.g. CTRL)
+
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
     {
@@ -61,6 +57,7 @@ int network_server_init(short port)
         return -1;
     }
 
+    signal_sigint(sigint_handler);
     return sockfd;
 }
 
@@ -72,7 +69,7 @@ int network_main_loop(int listening_socket)
         return -1;
     }
 
-    signal_sigpipe();
+    signal_sigpipe(NULL);
 
     struct sockaddr_in my_soc = {0};
     socklen_t addr_size = sizeof my_soc;
@@ -97,7 +94,6 @@ int network_main_loop(int listening_socket)
                     int err = *msg->data.data;
                     printf("Erro na mensagem recebida pelo servidor: %d\n", err);
                 }
-                return res; // erro
             }
             network_send(connsockfd, msg);
         }

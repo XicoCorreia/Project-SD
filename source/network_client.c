@@ -18,20 +18,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// Função que faz com que o sinal SIGPIPE seja ignorado.
-void signal_sigpipe()
-{
-    struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
-    sa.sa_flags = 0;
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGPIPE, &sa, NULL) == -1)
-    {
-        perror("signal_sigpipe");
-        exit(EXIT_FAILURE);
-    }
-}
-
 int network_connect(struct rtree_t *rtree)
 {
     int sockfd;
@@ -70,7 +56,7 @@ int network_connect(struct rtree_t *rtree)
         return -1;
     }
 
-    signal_sigpipe();
+    signal_sigpipe(NULL);
     freeaddrinfo(res);
     rtree->sockfd = sockfd;
     return 0;

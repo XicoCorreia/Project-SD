@@ -15,4 +15,16 @@ int read_all(int sockfd, void *buf, int len);
  */
 int write_all(int sockfd, void *buf, int len);
 
+/* Função que associa a invocação da função dada em argumento ao sinal
+ * de "broken pipe". Se o argumento dado for NULL,
+ * o sinal é ignorado através da constante SIG_IGN.
+ */
+void signal_sigpipe(void *handler);
+
+/* Função que associa a invocação da função dada em argumento ao sinal
+ * de interrupção do teclado (i.e., CTRL+C). Se o argumento dado for NULL,
+ * o sinal é ignorado através da constante SIG_IGN.
+ */
+void signal_sigint(void *handler);
+
 #endif

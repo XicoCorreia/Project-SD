@@ -7,7 +7,9 @@
  */
 #include "message-private.h"
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 int read_all(int sock, void *buf, int len)
@@ -50,4 +52,30 @@ int write_all(int sock, void *buf, int len)
         len -= res;
     }
     return bufsize;
+}
+
+void signal_sigpipe(void *handler)
+{
+    struct sigaction sa;
+    sa.sa_handler = handler == NULL ? SIG_IGN : handler;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGPIPE, &sa, NULL) == -1)
+    {
+        perror("signal_sigpipe");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void signal_sigint(void *handler)
+{
+    struct sigaction sa;
+    sa.sa_handler = handler == NULL ? SIG_IGN : handler;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGINT, &sa, NULL) == -1)
+    {
+        perror("signal_sigint");
+        exit(EXIT_FAILURE);
+    }
 }
