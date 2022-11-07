@@ -6,6 +6,10 @@ binary/*
 object/*
 !object/.gitkeep
 
+# Local lib files
+lib/*
+!lib/.gitkeep
+
 # VSCode settings
 .vscode/*
 !.vscode/launch.json
