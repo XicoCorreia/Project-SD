@@ -5,20 +5,18 @@
  *   Alexandre Fonseca - fc55955
  *   Filipe Egipto - fc56272
  */
-#include <client_stub-private.h>
-#include <client_stub.h>
+#include "client_stub-private.h"
+#include "client_stub.h"
+#include "message-private.h"
+#include "tree_client-private.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 size_t LINE_SIZE = 2048;
+struct rtree_t *rtree;
 
-/**
- * Função que imprime o valor associado a uma chave.
- * Se o valor não for passível de imprimir como string,
- * imprime-se "desconhecido" e o tamanho do valor.
- */
 void print_value(struct data_t *data)
 {
     char *str = (char *)data->data;
@@ -32,6 +30,16 @@ void print_value(struct data_t *data)
     }
 }
 
+void tree_client_exit()
+{
+    int status = rtree_disconnect(rtree);
+    if (status != 0)
+    {
+        perror("tree_client");
+    }
+    exit(status);
+}
+
 int main(int argc, char const *argv[])
 {
     /* Testar os argumentos de entrada */
@@ -41,12 +49,13 @@ int main(int argc, char const *argv[])
         printf("Exemplo de uso: ./tree-client 127.0.0.1:12345\n");
         exit(EXIT_FAILURE);
     }
-    struct rtree_t *rtree = rtree_connect(argv[1]);
+    rtree = rtree_connect(argv[1]);
     if (rtree == NULL)
     {
         exit(EXIT_FAILURE);
     }
 
+    signal_sigint(tree_client_exit);
     while (true)
     {
         char str[LINE_SIZE];
@@ -132,7 +141,7 @@ int main(int argc, char const *argv[])
             int i = rtree_del(rtree, key);
             if (i == -1)
             {
-                printf("Erro no comando 'del'.\n");
+                printf("'%s': entrada inexistente\n", key);
             }
             else
             {
@@ -219,10 +228,5 @@ int main(int argc, char const *argv[])
         }
     }
 
-    int status = rtree_disconnect(rtree);
-    if (status != 0)
-    {
-        perror("tree_client");
-    }
-    return status;
+    tree_client_exit();
 }

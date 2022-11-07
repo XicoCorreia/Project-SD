@@ -78,14 +78,9 @@ int network_main_loop(int listening_socket)
     while ((connsockfd = accept(listening_socket, (struct sockaddr *)&my_soc, &addr_size)) != -1)
     {
         printf("Ligação estabelecida com o cliente '%s:%d'\n", inet_ntoa(my_soc.sin_addr), my_soc.sin_port);
-        while (true)
+        MessageT *msg;
+        while ((msg = network_receive(connsockfd)) != NULL)
         {
-            MessageT *msg = network_receive(connsockfd);
-            if (msg == NULL)
-            {
-                printf("Foi fechada a ligação com o cliente.\n");
-                break;
-            }
             int res;
             if ((res = invoke(msg)) != 0)
             {
@@ -97,9 +92,15 @@ int network_main_loop(int listening_socket)
             }
             network_send(connsockfd, msg);
         }
+
+        if (close(connsockfd) < 0)
+        {
+            perror("network_main_loop");
+        }
+        printf("Foi fechada a ligação com o cliente.\n");
     }
 
-    if (connsockfd < 0 || close(connsockfd) < 0)
+    if (connsockfd < 0)
     {
         perror("network_main_loop");
         return -1;
@@ -121,7 +122,12 @@ MessageT *network_receive(int client_socket)
         return NULL;
     }
 
-    if (len <= 0)
+    if (len == 0)
+    {
+        return NULL; // Ligação terminada pelo cliente
+    }
+
+    if (len < 0)
     {
         printf("Tamanho de buffer pedido inválido: %d\n", len);
         close(client_socket);

@@ -124,6 +124,12 @@ int rtree_del(struct rtree_t *rtree, char *key)
     }
     if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)
     {
+        if (msg.c_type == MESSAGE_T__C_TYPE__CT_RESULT)
+        {
+            int ret = *((int *)msg.data.data);
+            free(msg.data.data);
+            return ret;
+        }
         return -1;
     }
     return 0;

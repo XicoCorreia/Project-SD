@@ -129,6 +129,12 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
  */
 int network_close(struct rtree_t *rtree)
 {
+    // Sinalizamos ao servidor que pretendemos encerrar a ligação
+    int len = 0;
+    if (write_all(rtree->sockfd, &len, sizeof(int)) < 0)
+    {
+        perror("network-close");
+    }
     if (close(rtree->sockfd) < 0)
     {
         perror("network_close");

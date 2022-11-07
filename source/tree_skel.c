@@ -62,13 +62,27 @@ int invoke(MessageT *msg)
         if (status < 0)
         {
             printf("del: Chave '%s' nao encontrada.\n", key);
+            free(msg->data.data);
+            msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+            msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+            msg->data.len = sizeof(int);
+            msg->data.data = malloc(sizeof(int));
+            if (msg->data.data == NULL)
+            {
+                msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+                break;
+            }
+            *((int *)msg->data.data) = status;
+        }
+        else
+        {
+            free(msg->data.data);
+            msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
+            msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+            msg->data.len = 0;
+            msg->data.data = NULL;
         }
 
-        free(msg->data.data);
-        msg->data.len = 0;
-        msg->data.data = NULL;
-        msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
-        msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
         break;
 
     case MESSAGE_T__OPCODE__OP_GET:
@@ -168,7 +182,8 @@ int invoke(MessageT *msg)
         break;
     }
 
-    if (msg->opcode == MESSAGE_T__OPCODE__OP_BAD || msg->opcode == MESSAGE_T__OPCODE__OP_ERROR)
+    if (msg->c_type == MESSAGE_T__C_TYPE__CT_NONE &&
+        (msg->opcode == MESSAGE_T__OPCODE__OP_BAD || msg->opcode == MESSAGE_T__OPCODE__OP_ERROR))
     {
         free(msg->data.data);
         msg->data.len = 0;
