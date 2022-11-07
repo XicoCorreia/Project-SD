@@ -17,29 +17,6 @@
 size_t LINE_SIZE = 2048;
 struct rtree_t *rtree;
 
-void print_value(struct data_t *data)
-{
-    char *str = (char *)data->data;
-    if (str[data->datasize - 1] == '\0')
-    {
-        printf("'%s'", str); // imprime dados null-terminated
-    }
-    else
-    {
-        printf("desconhecido (%d bytes)", data->datasize);
-    }
-}
-
-void tree_client_exit()
-{
-    int status = rtree_disconnect(rtree);
-    if (status != 0)
-    {
-        perror("tree_client");
-    }
-    exit(status);
-}
-
 int main(int argc, char const *argv[])
 {
     /* Testar os argumentos de entrada */
@@ -229,4 +206,27 @@ int main(int argc, char const *argv[])
     }
 
     tree_client_exit();
+}
+
+void print_value(struct data_t *data)
+{
+    char *str = (char *)data->data;
+    if (str[data->datasize - 1] == '\0')
+    {
+        printf("'%s'", str); // imprime dados null-terminated
+    }
+    else
+    {
+        printf("desconhecido (%d bytes)", data->datasize);
+    }
+}
+
+void tree_client_exit()
+{
+    int status = rtree_disconnect(rtree);
+    if (status != 0)
+    {
+        perror("tree_client");
+    }
+    exit(status);
 }

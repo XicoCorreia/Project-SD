@@ -15,6 +15,6 @@ void print_value(struct data_t *data);
  * fechando a ligação com o servidor remoto e
  * libertando a memória usada.
  */
-void sigint_handler();
+void tree_client_exit();
 
 #endif
