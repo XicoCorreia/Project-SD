@@ -61,6 +61,7 @@ int main(int argc, char const *argv[])
             token = strtok(NULL, "\0");
             if (token == NULL)
             {
+                free(key);
                 printf("Erro a ler argumentos.\n");
                 continue;
             }
