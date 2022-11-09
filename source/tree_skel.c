@@ -31,13 +31,16 @@ void tree_skel_destroy()
 
 int invoke(MessageT *msg)
 {
-    int status;
-    char *key;
-    struct data_t *value;
+    int status = 0;
+
+    if (msg == NULL)
+    {
+        return -1;
+    }
 
     switch (msg->opcode)
     {
-    case MESSAGE_T__OPCODE__OP_SIZE:
+    case MESSAGE_T__OPCODE__OP_SIZE: {
         int size = tree_size(tree);
         msg->data.len = sizeof(int);
         msg->data.data = malloc(sizeof(int));
@@ -45,8 +48,9 @@ int invoke(MessageT *msg)
         msg->opcode = MESSAGE_T__OPCODE__OP_SIZE + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
         break;
+    }
 
-    case MESSAGE_T__OPCODE__OP_HEIGHT:
+    case MESSAGE_T__OPCODE__OP_HEIGHT: {
         int height = tree_height(tree);
         msg->data.len = sizeof(int);
         msg->data.data = malloc(sizeof(int));
@@ -54,9 +58,10 @@ int invoke(MessageT *msg)
         msg->opcode = MESSAGE_T__OPCODE__OP_HEIGHT + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
         break;
+    }
 
-    case MESSAGE_T__OPCODE__OP_DEL:
-        key = (char *)msg->data.data;
+    case MESSAGE_T__OPCODE__OP_DEL: {
+        char *key = (char *)msg->data.data;
         status = tree_del(tree, key);
 
         if (status < 0)
@@ -64,14 +69,15 @@ int invoke(MessageT *msg)
             printf("del: Chave '%s' nao encontrada.\n", key);
             free(msg->data.data);
             msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
-            msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
-            msg->data.len = sizeof(int);
             msg->data.data = malloc(sizeof(int));
             if (msg->data.data == NULL)
             {
+                msg->data.len = 0;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 break;
             }
+            msg->data.len = sizeof(int);
+            msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
             *((int *)msg->data.data) = status;
         }
         else
@@ -84,10 +90,11 @@ int invoke(MessageT *msg)
         }
 
         break;
+    }
 
-    case MESSAGE_T__OPCODE__OP_GET:
-        key = (char *)msg->data.data;
-        value = tree_get(tree, key);
+    case MESSAGE_T__OPCODE__OP_GET: {
+        char *key = (char *)msg->data.data;
+        struct data_t *value = tree_get(tree, key);
 
         if (value == NULL)
         {
@@ -106,14 +113,18 @@ int invoke(MessageT *msg)
         msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_VALUE;
         break;
+    }
 
-    case MESSAGE_T__OPCODE__OP_PUT:
+    case MESSAGE_T__OPCODE__OP_PUT: {
         EntryT *entry = entry_t__unpack(NULL, msg->data.len, msg->data.data);
-        value = data_create2(entry->value.len, entry->value.data);
+        struct data_t *value = data_create2(entry->value.len, entry->value.data);
         status = tree_put(tree, entry->key, value);
         free(msg->data.data);
         free(value);
         entry_t__free_unpacked(entry, NULL);
+
+        msg->data.len = 0;
+        msg->data.data = NULL;
 
         if (status < 0)
         {
@@ -122,13 +133,12 @@ int invoke(MessageT *msg)
             break;
         }
 
-        msg->data.len = 0;
-        msg->data.data = NULL;
         msg->opcode = MESSAGE_T__OPCODE__OP_PUT + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
         break;
+    }
 
-    case MESSAGE_T__OPCODE__OP_GETKEYS:
+    case MESSAGE_T__OPCODE__OP_GETKEYS: {
         KeysT keys = KEYS_T__INIT;
         keys.keys = tree_get_keys(tree);
 
@@ -136,6 +146,8 @@ int invoke(MessageT *msg)
         {
             msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+            msg->data.len = 0;
+            msg->data.data = NULL;
             break;
         }
 
@@ -147,13 +159,16 @@ int invoke(MessageT *msg)
         msg->opcode = MESSAGE_T__OPCODE__OP_GETKEYS + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_KEYS;
         break;
+    }
 
-    case MESSAGE_T__OPCODE__OP_GETVALUES:
+    case MESSAGE_T__OPCODE__OP_GETVALUES: {
         struct data_t **data_arr = (struct data_t **)tree_get_values(tree);
         if (data_arr == NULL)
         {
             msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+            msg->data.len = 0;
+            msg->data.data = NULL;
             break;
         }
         ValuesT *values = malloc(sizeof(ValuesT)); // free_unpacked requer memória dinâmica
@@ -175,20 +190,15 @@ int invoke(MessageT *msg)
         values_t__pack(values, msg->data.data);
         values_t__free_unpacked(values, NULL);
         break;
+    }
 
     default:
         msg->opcode = MESSAGE_T__OPCODE__OP_BAD;
         msg->c_type = MESSAGE_T__C_TYPE__CT_BAD;
+        msg->data.len = 0;
+        msg->data.data = NULL;
         break;
     }
 
-    if (msg->c_type == MESSAGE_T__C_TYPE__CT_NONE &&
-        (msg->opcode == MESSAGE_T__OPCODE__OP_BAD || msg->opcode == MESSAGE_T__OPCODE__OP_ERROR))
-    {
-        free(msg->data.data);
-        msg->data.len = 0;
-        msg->data.data = NULL;
-        return -1;
-    }
-    return 0;
+    return status;
 }

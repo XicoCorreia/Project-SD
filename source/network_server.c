@@ -84,10 +84,9 @@ int network_main_loop(int listening_socket)
             int res;
             if ((res = invoke(msg)) != 0)
             {
-                if (msg->c_type == MESSAGE_T__C_TYPE__CT_RESULT)
+                if (msg->c_type == MESSAGE_T__C_TYPE__CT_NONE)
                 {
-                    int err = *msg->data.data;
-                    printf("Erro na mensagem recebida pelo servidor: %d\n", err);
+                    printf("Erro ao invocar a operação pedida pelo cliente.\n");
                 }
             }
             network_send(connsockfd, msg);
