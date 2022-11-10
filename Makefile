@@ -19,7 +19,7 @@ SERVER_OBJS = sdmessage.pb-c.o data.o entry.o message.o network_server.o tree_se
 CC = gcc
 CFLAGS = -std=gnu99 -Wall -g -I $(INC_DIR)
 COMPILE = $(CC) $(CFLAGS) -c -o $(OBJ_DIR)/$@ $<
-LIBS = -l:libprotobuf-c.a
+LIBS = -l:libprotobuf-c.a -lpthread
 
 vpath %.o $(OBJ_DIR)
 
@@ -46,9 +46,9 @@ proto: sdmessage.pb-c.c
 
 zip:
 	make clean
-	cd ../ && zip -r $(GROUP)-projeto2.zip $(GROUP) -x "*/.clang-format" "*/.git/*" \
+	cd ../ && zip -r $(GROUP)-projeto3.zip $(GROUP) -x "*/.clang-format" "*/.git/*" \
 	"*/.gitignore" "*/.vscode/*" \
 	"*/.gitkeep"
 
 clean:
-	rm -f $(OBJ_DIR)/* $(LIB_DIR)/* $(BIN_DIR)/* ../$(GROUP)-projeto2.zip
+	rm -f $(OBJ_DIR)/* $(LIB_DIR)/* $(BIN_DIR)/* ../$(GROUP)-projeto3.zip

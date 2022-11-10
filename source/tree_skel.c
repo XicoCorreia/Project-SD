@@ -13,8 +13,9 @@
 #include <stdlib.h>
 
 struct tree_t *tree;
+struct request_t *queue_head;
 
-int tree_skel_init()
+int tree_skel_init(int N)
 {
     tree = tree_create();
     if (tree == NULL)

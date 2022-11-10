@@ -6,7 +6,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/binary/tree-server",
             "args": [
-                "45682"
+                "45682",
+                "5"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

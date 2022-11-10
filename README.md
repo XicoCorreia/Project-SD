@@ -1,4 +1,4 @@
-# Sistemas Distribuídos 2022/2023 - Projeto (2a parte)
+# Sistemas Distribuídos 2022/2023 - Projeto (3a parte)
 
 ## Autores (Grupo SD-048)
 
@@ -14,15 +14,16 @@ No diretório de raíz do projeto, correr o seguinte:
 
 ```shell
 $ make
-$ tree-server <port>
+$ tree-server <port> <N>
 $ tree-client <server>:<port>
 ```
 Onde `server` é o endereço IP ou nome do servidor da árvore,
-e `port` é o número do porto TCP onde o servidor está à espera de ligações.
+`port` é o número do porto TCP onde o servidor está à espera de ligações,
+e `N` é o número de *threads* secundárias que servem os pedidos de escrita.
 
 Alvos do Makefile:
 
-- `make [default]:` compila o cliente `tree-client` e o servidor `tree-server`
+- `make [default]`: compila o cliente `tree-client` e o servidor `tree-server`
 - `make proto`: produz os ficheiros `sdmessage.pb-c.c/.h` do ficheiro `.proto`
 - `make clean`: limpa os ficheiros produzidos pelo compilador
 - `make zip`: produz um ficheiro de arquivos para entrega do projeto
