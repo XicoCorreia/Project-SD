@@ -270,10 +270,10 @@ void rtree_free_values(void **values)
     free(values_ptr);
 }
 
-int rtree_verify(struct rtree_t *rtree, int op_n) 
+int rtree_verify(struct rtree_t *rtree, int op_n)
 {
     MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_VERIFY;                 
+    msg.opcode = MESSAGE_T__OPCODE__OP_VERIFY;
     msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
     msg.data.len = strlen(op_n) + 1;
     msg.data.data = (uint8_t *)op_n;
@@ -281,7 +281,7 @@ int rtree_verify(struct rtree_t *rtree, int op_n)
     {
         return -1;
     }
-    if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)         
+    if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)
     {
         return -1;
     }

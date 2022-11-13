@@ -140,7 +140,7 @@ int main(int argc, char const *argv[])
             {
                 printf("'%s': numero nao associado a uma operacao\n", key);
             }
-            else if(i == 1)
+            else if (i == 1)
             {
                 printf("'%s': operação executada\n", key);
             }
@@ -148,7 +148,7 @@ int main(int argc, char const *argv[])
             {
                 printf("'%s': operação ainda nao foi executada\n", key);
             }
-                                                                            // ? free key
+            // ? free key
         }
         else if (strcmp(token, "size") == 0)
         {
