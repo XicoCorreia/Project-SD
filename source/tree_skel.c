@@ -15,10 +15,13 @@
 #include <stdlib.h>
 
 struct tree_t *tree;
-int num_threads;
 request_t *queue_head;
 int last_assigned = 1;
 op_proc_t op_proc;
+
+int num_threads;
+pthread_t *thread;
+int *thread_param;
 
 pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
@@ -28,18 +31,39 @@ pthread_cond_t op_proc_cond = PTHREAD_COND_INITIALIZER;
 
 int tree_skel_init(int N)
 {
+    num_threads = N;
     tree = tree_create();
     if (tree == NULL)
     {
         return -1;
     }
-    op_proc.max_proc = 0; // default pois op_n >= 1
-    num_threads = N;
-    op_proc.in_progress = calloc(sizeof(int), N); // max N threads a concorrer
+    op_proc.max_proc = 0;                                   // default pois op_n >= 1
+    op_proc.in_progress = calloc(sizeof(int), num_threads); // max N threads a concorrer
     if (op_proc.in_progress == NULL)
     {
-        tree_skel_destroy(tree);
+        perror("tree_skel_init");
         return -1;
+    }
+    thread = malloc(sizeof(pthread_t) * num_threads);
+    if (thread == NULL)
+    {
+        perror("tree_skel_init");
+        return -1;
+    }
+    thread_param = malloc(sizeof(int) * num_threads);
+    if (thread_param == NULL)
+    {
+        perror("tree_skel_init");
+        return -1;
+    }
+    for (int i = 0; i < num_threads; i++)
+    {
+        thread_param[i] = i; // para aceder a op_proc.in_progress[i]
+        if (pthread_create(&thread[i], NULL, &process_request, (void *)&thread_param[i]) != 0)
+        {
+            perror("tree_skel_init");
+            exit(EXIT_FAILURE);
+        }
     }
     return 0;
 }
@@ -47,6 +71,27 @@ int tree_skel_init(int N)
 void tree_skel_destroy()
 {
     tree_destroy(tree);
+    int *r;
+    for (int i = 0; i < num_threads; i++)
+    {
+        if (pthread_join(&thread[i], (void **)&r) != 0)
+        {
+            perror("tree_skel_destroy");
+            exit(EXIT_FAILURE);
+        }
+    }
+    free(thread_param);
+    free(thread);
+    free(op_proc.in_progress);
+    request_t *temp;
+    while (queue_head != NULL)
+    {
+        temp = queue_head->next;
+        free(queue_head->key);
+        data_destroy(queue_head->data);
+        free(queue_head);
+        queue_head = temp;
+    }
 }
 
 int invoke(MessageT *msg)
@@ -81,35 +126,25 @@ int invoke(MessageT *msg)
     }
 
     case MESSAGE_T__OPCODE__OP_DEL: {
-        // TODO
         char *key = (char *)msg->data.data;
-        status = tree_del(tree, key);
-
-        if (status < 0)
+        request_t *request = create_request(last_assigned, 0, key, NULL);
+        free(msg->data.data);
+        if (request == NULL)
         {
-            printf("del: Chave '%s' nao encontrada.\n", key);
-            free(msg->data.data);
             msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
-            msg->data.data = malloc(sizeof(int));
-            if (msg->data.data == NULL)
-            {
-                msg->data.len = 0;
-                msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
-                break;
-            }
-            msg->data.len = sizeof(int);
-            msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
-            *((int *)msg->data.data) = status;
-        }
-        else
-        {
-            free(msg->data.data);
-            msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
             msg->data.len = 0;
             msg->data.data = NULL;
         }
-
+        else
+        {
+            msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
+            msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+            msg->data.len = sizeof(int);
+            msg->data.data = last_assigned;
+            last_assigned++;
+            queue_add_request(request);
+        }
         break;
     }
 
@@ -137,26 +172,28 @@ int invoke(MessageT *msg)
     }
 
     case MESSAGE_T__OPCODE__OP_PUT: {
-        // TODO
         EntryT *entry = entry_t__unpack(NULL, msg->data.len, msg->data.data);
-        struct data_t *value = data_create2(entry->value.len, entry->value.data);
-        status = tree_put(tree, entry->key, value);
+        struct data_t *data = data_create2(entry->value.len, entry->value.data);
+        request_t *request = create_request(last_assigned, 1, entry->key, data);
+        free(data);
         free(msg->data.data);
-        free(value);
         entry_t__free_unpacked(entry, NULL);
-
-        msg->data.len = 0;
-        msg->data.data = NULL;
-
-        if (status < 0)
+        if (request == NULL)
         {
             msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
-            break;
+            msg->data.len = 0;
+            msg->data.data = NULL;
         }
-
-        msg->opcode = MESSAGE_T__OPCODE__OP_PUT + 1;
-        msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+        else
+        {
+            msg->opcode = MESSAGE_T__OPCODE__OP_PUT + 1;
+            msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+            msg->data.len = sizeof(int);
+            msg->data.data = last_assigned;
+            last_assigned++;
+            queue_add_request(request);
+        }
         break;
     }
 
@@ -300,5 +337,25 @@ request_t *queue_get_request()
     request_t *request = queue_head;
     queue_head = request->next;
     pthread_mutex_unlock(&queue_lock);
+    return request;
+}
+
+request_t *create_request(int op_n, int op, char *key, struct data_t *data)
+{
+    request_t *request = malloc(sizeof(request_t));
+    if (request == NULL)
+    {
+        perror("create_request");
+        return NULL;
+    }
+    if ((request->key = strdup(key)) == NULL)
+    {
+        perror("create_request");
+        free(request);
+        return NULL;
+    }
+    request->data = data_dup(data);
+    request->op_n = op_n;
+    request->op = op;
     return request;
 }

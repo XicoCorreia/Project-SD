@@ -14,4 +14,9 @@ void queue_add_request(request_t *request);
  */
 request_t *queue_get_request();
 
+/* Cria um pedido, reservando a memória necessária para o mesmo,
+ * e copia os argumentos para a estrutura criada.
+ */
+request_t *create_request(int op_n, int op, char *key, struct data_t *data);
+
 #endif
