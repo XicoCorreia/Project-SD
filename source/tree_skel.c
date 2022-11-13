@@ -9,6 +9,7 @@
 #include "entry.h"
 #include "string.h"
 #include "tree.h"
+#include "tree_skel-private.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,9 @@ int num_threads;
 request_t *queue_head;
 int last_assigned = 1;
 op_proc_t op_proc;
+
+pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t op_proc_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t op_proc_cond = PTHREAD_COND_INITIALIZER;
@@ -254,4 +258,47 @@ int verify(int op_n)
     pthread_cond_signal(&op_proc_cond);
     pthread_mutex_unlock(&op_proc_lock);
     return status;
+}
+
+void *process_request(void *params)
+{
+    // TODO
+    // ? considerar um thread_data_t com tipo (del vs. put) e num da thread
+    request_t *request = queue_get_request();
+    return request;
+}
+
+void queue_add_request(request_t *request)
+{
+    pthread_mutex_lock(&queue_lock);
+    if (queue_head == NULL)
+    {
+        queue_head = request;
+        request->next = NULL;
+    }
+    else
+    {
+        request_t *rptr = queue_head;
+        while (rptr->next != NULL)
+        {
+            rptr = rptr->next;
+        }
+        rptr->next = request;
+        request->next = NULL;
+    }
+    pthread_cond_signal(&queue_cond);
+    pthread_mutex_unlock(&queue_lock);
+}
+
+request_t *queue_get_request()
+{
+    pthread_mutex_lock(&queue_lock);
+    while (queue_head == NULL)
+    {
+        pthread_cond_wait(&queue_cond, &queue_lock);
+    }
+    request_t *request = queue_head;
+    queue_head = request->next;
+    pthread_mutex_unlock(&queue_lock);
+    return request;
 }
