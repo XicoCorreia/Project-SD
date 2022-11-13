@@ -9,17 +9,32 @@
 #include "entry.h"
 #include "string.h"
 #include "tree.h"
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 struct tree_t *tree;
-struct request_t *queue_head;
+int num_threads;
+request_t *queue_head;
+int last_assigned = 1;
+op_proc_t op_proc;
+
+pthread_mutex_t op_proc_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t op_proc_cond = PTHREAD_COND_INITIALIZER;
 
 int tree_skel_init(int N)
 {
     tree = tree_create();
     if (tree == NULL)
     {
+        return -1;
+    }
+    op_proc.max_proc = 0; // default pois op_n >= 1
+    num_threads = N;
+    op_proc.in_progress = calloc(sizeof(int), N); // max N threads a concorrer
+    if (op_proc.in_progress == NULL)
+    {
+        tree_skel_destroy(tree);
         return -1;
     }
     return 0;
@@ -62,6 +77,7 @@ int invoke(MessageT *msg)
     }
 
     case MESSAGE_T__OPCODE__OP_DEL: {
+        // TODO
         char *key = (char *)msg->data.data;
         status = tree_del(tree, key);
 
@@ -117,6 +133,7 @@ int invoke(MessageT *msg)
     }
 
     case MESSAGE_T__OPCODE__OP_PUT: {
+        // TODO
         EntryT *entry = entry_t__unpack(NULL, msg->data.len, msg->data.data);
         struct data_t *value = data_create2(entry->value.len, entry->value.data);
         status = tree_put(tree, entry->key, value);
@@ -193,6 +210,17 @@ int invoke(MessageT *msg)
         break;
     }
 
+    case MESSAGE_T__OPCODE__OP_VERIFY: {
+        // TODO
+        int op_n = *(int *)msg->data.data;
+        int status = verify(op_n);
+        msg->opcode = MESSAGE_T__OPCODE__OP_VERIFY + 1;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+        msg->data.len = sizeof(int);
+        msg->data.data = malloc(msg->data.len);
+        *((int *)msg->data.data) = status;
+    }
+
     default:
         msg->opcode = MESSAGE_T__OPCODE__OP_BAD;
         msg->c_type = MESSAGE_T__C_TYPE__CT_BAD;
@@ -201,5 +229,29 @@ int invoke(MessageT *msg)
         break;
     }
 
+    return status;
+}
+
+int verify(int op_n)
+{
+    int status = 0;
+    pthread_mutex_lock(&op_proc_lock);
+    if (op_n > op_proc.max_proc)
+    {
+        status = -1;
+    }
+    else
+    {
+        for (int i = 0; i < num_threads; i++)
+        {
+            if (op_proc.in_progress[i] == op_n)
+            {
+                status = -1;
+                break;
+            }
+        }
+    }
+    pthread_cond_signal(&op_proc_cond);
+    pthread_mutex_unlock(&op_proc_lock);
     return status;
 }

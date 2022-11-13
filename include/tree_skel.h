@@ -4,15 +4,29 @@
 #include "sdmessage.pb-c.h"
 #include "tree.h"
 
-struct request_t
+/* Estrutura para um pedido de operação (de escrita).
+ * Deve ser definido o número de operação, a operação a ser
+ * executada (0 para 'del', 1 para 'put'), assim como a chave
+ * e o valor (NULL no caso de 'del').
+ */
+typedef struct _request_t
 {
-    int op_n;               // o número da operação
-    int op;                 // a operação a executar. op=0 se for um delete, op=1 se for um put
-    char *key;              // a chave a remover ou adicionar
-    struct data_t *data;    // os dados a adicionar em caso de put, ou NULL em caso de delete
-    struct request_t *next; // o próximo pedido
-    // adicionar campo(s) necessário(s) para implementar fila do tipo produtor/consumidor
-}
+    int op_n;                // o número da operação
+    int op;                  // a operação a executar. op=0 se for um delete, op=1 se for um put
+    char *key;               // a chave a remover ou adicionar
+    struct data_t *data;     // os dados a adicionar em caso de put, ou NULL em caso de delete
+    struct _request_t *next; // o próximo pedido
+} request_t;
+
+/* Estrutura que contém os identificadores das operações
+ * (de escrita) em curso, assim como o maior identificador
+ * das operações processadas.
+ */
+typedef struct _op_proc_t
+{
+    int max_proc;
+    int *in_progress;
+} op_proc_t;
 
 /* Inicia o skeleton da árvore.
  * O main() do servidor deve chamar esta função antes de poder usar a
