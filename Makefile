@@ -25,6 +25,10 @@ vpath %.o $(OBJ_DIR)
 
 default: tree-client tree-server
 
+withtree:
+	cp tree_fornecido.o $(OBJ_DIR)/tree.o
+	make default
+
 tree-client: client-lib.o $(CLIENT_OBJS)
 	$(CC) $(addprefix $(OBJ_DIR)/, $(CLIENT_OBJS)) $(LIB_DIR)/client-lib.o -o $(BIN_DIR)/$@ $(LIBS)
 
