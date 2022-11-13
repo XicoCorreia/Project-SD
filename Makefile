@@ -47,8 +47,7 @@ proto: sdmessage.pb-c.c
 zip:
 	make clean
 	cd ../ && zip -r $(GROUP)-projeto3.zip $(GROUP) -x "*/.clang-format" "*/.git/*" \
-	"*/.gitignore" "*/.vscode/*" \
-	"*/.gitkeep"
+	"*/.gitignore" "*/.vscode/*" "*/.gitkeep" "*/*.pdf"
 
 clean:
 	rm -f $(OBJ_DIR)/* $(LIB_DIR)/* $(BIN_DIR)/* ../$(GROUP)-projeto3.zip
