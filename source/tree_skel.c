@@ -127,7 +127,7 @@ int invoke(MessageT *msg)
 
     case MESSAGE_T__OPCODE__OP_DEL: {
         char *key = (char *)msg->data.data;
-        request_t *request = create_request(last_assigned, 0, key, NULL);
+        request_t *request = create_request(last_assigned, OP_DEL, key, NULL);
         free(msg->data.data);
         if (request == NULL)
         {
@@ -141,7 +141,7 @@ int invoke(MessageT *msg)
             msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
             msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
             msg->data.len = sizeof(int);
-            msg->data.data = last_assigned;
+            *((int *)msg->data.data) = last_assigned;
             last_assigned++;
             queue_add_request(request);
         }
@@ -174,7 +174,7 @@ int invoke(MessageT *msg)
     case MESSAGE_T__OPCODE__OP_PUT: {
         EntryT *entry = entry_t__unpack(NULL, msg->data.len, msg->data.data);
         struct data_t *data = data_create2(entry->value.len, entry->value.data);
-        request_t *request = create_request(last_assigned, 1, entry->key, data);
+        request_t *request = create_request(last_assigned, OP_PUT, entry->key, data);
         free(data);
         free(msg->data.data);
         entry_t__free_unpacked(entry, NULL);
@@ -190,7 +190,7 @@ int invoke(MessageT *msg)
             msg->opcode = MESSAGE_T__OPCODE__OP_PUT + 1;
             msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
             msg->data.len = sizeof(int);
-            msg->data.data = last_assigned;
+            *((int *)msg->data.data) = last_assigned;
             last_assigned++;
             queue_add_request(request);
         }
@@ -279,7 +279,7 @@ int verify(int op_n)
     pthread_mutex_lock(&op_proc_lock);
     if (op_n > op_proc.max_proc)
     {
-        status = -1;
+        status = -1; // ! -1 vs 0 vs outros (e.g. op > last_assigned)
     }
     else
     {

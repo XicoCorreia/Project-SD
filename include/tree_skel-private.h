@@ -3,6 +3,9 @@
 
 #include "tree_skel.h"
 
+#define OP_DEL 0
+#define OP_PUT 1
+
 /* Acrescenta um pedido (de escrita) à fila de pedidos.
  * O pedido será processado por uma thread secundária.
  */
