@@ -77,7 +77,7 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                printf("'%s': valor inserido\n", entry->key);
+                printf("'%s':  numero identificador da operacão put para entrada %s\n", i, entry->key);
             }
             entry_destroy(entry);
         }
@@ -123,8 +123,32 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                printf("'%s': valor removido\n", key);
+                printf("'%s':  numero identificador da operacão del para entrada %s\n", i, key);
             }
+        }
+        else if (strcmp(token, "verify") == 0)
+        {
+            char *key = strtok(NULL, " ");
+            if (key == NULL)
+            {
+                printf("Erro a ler argumentos.\n");
+                continue;
+            }
+
+            int i = rtree_verify(rtree, key);
+            if (i == -1)
+            {
+                printf("'%s': numero nao associado a uma operacao\n", key);
+            }
+            else if(i == 1)
+            {
+                printf("'%s': operação executada\n", key);
+            }
+            else
+            {
+                printf("'%s': operação ainda nao foi executada\n", key);
+            }
+                                                                            // ? free key
         }
         else if (strcmp(token, "size") == 0)
         {

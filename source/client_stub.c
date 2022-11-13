@@ -81,7 +81,9 @@ int rtree_put(struct rtree_t *rtree, struct entry_t *entry)
     {
         return -1;
     }
-    return 0;
+    int ret = *((int *)msg.data.data);
+    free(msg.data.data);
+    return ret;
 }
 
 struct data_t *rtree_get(struct rtree_t *rtree, char *key)
@@ -124,15 +126,12 @@ int rtree_del(struct rtree_t *rtree, char *key)
     }
     if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)
     {
-        if (msg.c_type == MESSAGE_T__C_TYPE__CT_RESULT)
-        {
-            int ret = *((int *)msg.data.data);
-            free(msg.data.data);
-            return ret;
-        }
         return -1;
     }
-    return 0;
+
+    int ret = *((int *)msg.data.data);
+    free(msg.data.data);
+    return ret;
 }
 
 int rtree_size(struct rtree_t *rtree)
@@ -269,4 +268,25 @@ void rtree_free_values(void **values)
         count++;
     }
     free(values_ptr);
+}
+
+int rtree_verify(struct rtree_t *rtree, int op_n) 
+{
+    MessageT msg = MESSAGE_T__INIT;
+    msg.opcode = MESSAGE_T__OPCODE__OP_VERIFY;                 
+    msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+    msg.data.len = strlen(op_n) + 1;
+    msg.data.data = (uint8_t *)op_n;
+    if (network_send_receive(rtree, &msg) == NULL)
+    {
+        return -1;
+    }
+    if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)         
+    {
+        return -1;
+    }
+
+    int ret = *((int *)msg.data.data);
+    free(msg.data.data);
+    return ret;
 }
