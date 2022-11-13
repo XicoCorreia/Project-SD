@@ -275,7 +275,7 @@ int rtree_verify(struct rtree_t *rtree, int op_n)
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_VERIFY;
     msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
-    msg.data.len = strlen(op_n) + 1;
+    msg.data.len = sizeof(int);
     msg.data.data = (uint8_t *)op_n;
     if (network_send_receive(rtree, &msg) == NULL)
     {

@@ -129,13 +129,14 @@ int main(int argc, char const *argv[])
         else if (strcmp(token, "verify") == 0)
         {
             char *key = strtok(NULL, " ");
+            int n_op = atoi(key);
             if (key == NULL)
             {
                 printf("Erro a ler argumentos.\n");
                 continue;
             }
 
-            int i = rtree_verify(rtree, key);
+            int i = rtree_verify(rtree, n_op);
             if (i == -1)
             {
                 printf("'%s': numero nao associado a uma operacao\n", key);
