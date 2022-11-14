@@ -17,8 +17,10 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <poll.h>
 
 int sockfd;
+int desc_set[0];
 
 void sigint_handler()
 {
@@ -63,48 +65,87 @@ int network_server_init(short port)
 
 int network_main_loop(int listening_socket)
 {
-    if (listen(listening_socket, 0) < 0)
-    {
-        perror("network_main_loop");
-        return -1;
-    }
-
-    signal_sigpipe(NULL);
+    int size = 1000;
+    struct pollfd desc_set[size];  //tamanho??
+    int count, i, error;
 
     struct sockaddr_in my_soc = {0};
     socklen_t addr_size = sizeof my_soc;
-    int connsockfd = 0;
 
-    while ((connsockfd = accept(listening_socket, (struct sockaddr *)&my_soc, &addr_size)) != -1)
-    {
-        printf("Ligação estabelecida com o cliente '%s:%d'\n", inet_ntoa(my_soc.sin_addr), my_soc.sin_port);
-        MessageT *msg;
-        while ((msg = network_receive(connsockfd)) != NULL)
-        {
-            int res;
-            if ((res = invoke(msg)) != 0)
-            {
-                if (msg->c_type == MESSAGE_T__C_TYPE__CT_NONE)
-                {
-                    printf("Erro ao invocar a operação pedida pelo cliente.\n");
-                }
-            }
-            network_send(connsockfd, msg);
-        }
-
-        if (close(connsockfd) < 0)
-        {
-            perror("network_main_loop");
-        }
-        printf("Foi fechada a ligação com o cliente.\n");
-    }
-
-    if (connsockfd < 0)
+    if (listen(listening_socket, 0) < 0)
     {
         perror("network_main_loop");
+        close(listening_socket);
         return -1;
     }
 
+    for (i = 0; i < size; i++)
+    {
+        desc_set[i].fd = -1;
+    }
+
+    desc_set[0].fd = listening_socket;
+    desc_set[0].events = POLLIN;
+
+    count = 1;
+
+    signal_sigpipe(NULL);
+
+    int k;
+    while (k = poll(desc_set, count, 10) >= 0) 
+    {
+        if (k > 0)
+        {    
+            if ((desc_set[0].revents & POLLIN) && (count < size)) //necessário "checkar"?! usar "anel"?
+            {
+                if ((desc_set[count].fd = accept(desc_set[0].fd, (struct sockaddr *)&my_soc, &addr_size)) != -1)
+                {
+                    desc_set[count].events = POLLIN;
+                    count++;
+                }
+            }
+            for (i = 1; i < count; i++)
+            {
+                if (desc_set[i].revents & POLLIN)
+                {
+                    MessageT *msg;
+                    if ((msg = network_receive(desc_set[i].fd)) != NULL)
+                    {
+                        int res;
+                        if ((res = invoke(msg)) != 0)
+                        {
+                            if (msg->c_type == MESSAGE_T__C_TYPE__CT_NONE)
+                            {
+                                printf("Erro ao invocar a operação pedida pelo cliente.\n");
+                            }
+                        }
+                        if (network_send(desc_set[i].fd, msg) == -1)
+                        {
+                            close(desc_set[i].fd);
+                            desc_set[i].fd = -1;
+                            printf("Foi fechada a ligação com o cliente.\n");
+                        }
+                    }
+                    else 
+                    {
+                        close(desc_set[i].fd);
+                        desc_set[i].fd = -1;
+                        printf("Foi fechada a ligação com o cliente.\n");
+                    }
+                }
+                error = 0;
+                getsockopt(desc_set[i].fd, SOL_SOCKET, SO_ERROR, &error, sizeof(int));
+                if ((error != 0) || (desc_set[i].revents & POLLHUP))
+                {
+                    close(desc_set[i].fd);
+                    desc_set[i].fd = -1;
+                    printf("Foi fechada a ligação com o cliente.\n");
+                }
+            }
+        }
+    }
+
+    close(listening_socket);
     return 0;
 }
 
@@ -140,7 +181,7 @@ MessageT *network_receive(int client_socket)
         return NULL;
     }
 
-    nbytes = read_all(client_socket, buffer, len); // read_all
+    nbytes = read_all(client_socket, buffer, len);
     if (nbytes != len)
     {
         printf("Erro a receber dados do cliente.");
