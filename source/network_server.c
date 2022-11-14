@@ -101,6 +101,7 @@ int network_main_loop(int listening_socket)
             {
                 if ((desc_set[count].fd = accept(desc_set[0].fd, (struct sockaddr *)&my_soc, &addr_size)) != -1)
                 {
+                    printf("Ligação estabelecida com o cliente '%s:%d'\n", inet_ntoa(my_soc.sin_addr), my_soc.sin_port);
                     desc_set[count].events = POLLIN;
                     count++;
                 }

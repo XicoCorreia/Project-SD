@@ -141,9 +141,20 @@ int invoke(MessageT *msg)
             msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
             msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
             msg->data.len = sizeof(int);
-            *((int *)msg->data.data) = last_assigned;
-            last_assigned++;
-            queue_add_request(request);
+            msg->data.data = malloc(msg->data.len);
+            if (msg->data.data == NULL)
+            {
+                perror("invoke");
+                msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+                msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+                msg->data.len = 0;
+            }
+            else
+            {
+                *((int *)msg->data.data) = last_assigned;
+                last_assigned++;
+                queue_add_request(request);
+            }
         }
         break;
     }
@@ -190,9 +201,20 @@ int invoke(MessageT *msg)
             msg->opcode = MESSAGE_T__OPCODE__OP_PUT + 1;
             msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
             msg->data.len = sizeof(int);
-            *((int *)msg->data.data) = last_assigned;
-            last_assigned++;
-            queue_add_request(request);
+            msg->data.data = malloc(msg->data.len);
+            if (msg->data.data == NULL)
+            {
+                perror("invoke");
+                msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+                msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+                msg->data.len = 0;
+            }
+            else
+            {
+                *((int *)msg->data.data) = last_assigned;
+                last_assigned++;
+                queue_add_request(request);
+            }
         }
         break;
     }
