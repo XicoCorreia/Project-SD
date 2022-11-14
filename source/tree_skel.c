@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+uint8_t terminate = 0;
+
 struct tree_t *tree;
 request_t *queue_head;
 int last_assigned = 1;
@@ -28,6 +30,9 @@ pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t op_proc_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t op_proc_cond = PTHREAD_COND_INITIALIZER;
+
+pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t tree_cond = PTHREAD_COND_INITIALIZER;
 
 int tree_skel_init(int N)
 {
@@ -70,7 +75,8 @@ int tree_skel_init(int N)
 
 void tree_skel_destroy()
 {
-    tree_destroy(tree);
+    terminate = 1;
+    pthread_cond_signal(&queue_cond);
     int *r;
     for (int i = 0; i < num_threads; i++)
     {
@@ -92,6 +98,7 @@ void tree_skel_destroy()
         free(queue_head);
         queue_head = temp;
     }
+    tree_destroy(tree);
 }
 
 int invoke(MessageT *msg)
@@ -165,7 +172,7 @@ int invoke(MessageT *msg)
 
         if (value == NULL)
         {
-            printf("get: Chave '%s' nao encontrada.\n", key);
+            printf("get: Chave '%s' não encontrada.\n", key);
             value = calloc(1, sizeof(struct data_t)); // size=0, data=NULL
         }
 
@@ -299,7 +306,7 @@ int verify(int op_n)
 {
     int status = 0;
     pthread_mutex_lock(&op_proc_lock);
-    if (op_n > op_proc.max_proc)
+    if (op_n > 0 || op_n > op_proc.max_proc)
     {
         status = -1; // ! -1 vs 0 vs outros (e.g. op > last_assigned)
     }
@@ -321,10 +328,49 @@ int verify(int op_n)
 
 void *process_request(void *params)
 {
-    // TODO
-    // ? considerar um thread_data_t com tipo (del vs. put) e num da thread
-    request_t *request = queue_get_request();
-    return request;
+    int tid = *(int *)params;
+    printf("Thread #%d: pronta a receber pedidos.\n", tid);
+    while (!terminate)
+    {
+        request_t *request = queue_get_request();
+        if (request == NULL)
+        {
+            break;
+        }
+        printf("Thread #%d: pedido %d recebido.\n", tid, request->op_n);
+        pthread_mutex_lock(&tree_lock);
+        if (request->op == OP_DEL)
+        {
+            if (tree_del(tree, request->key) == -1)
+            {
+                printf("del: Chave '%s' não encontrada.\n", request->key);
+            }
+        }
+        else if (request->op == OP_PUT)
+        {
+            if ((tree_put(tree, request->key, request->data) == -1))
+            {
+                printf("put: Erro ao inserir a entrada com a chave '%s'.\n", request->key);
+            }
+        }
+        pthread_cond_signal(&tree_cond);
+        pthread_mutex_unlock(&tree_lock);
+
+        pthread_mutex_lock(&op_proc_lock);
+        if (request->op_n > op_proc.max_proc)
+        {
+            op_proc.max_proc = request->op_n;
+        }
+        op_proc.in_progress[tid] = 0;
+        pthread_cond_signal(&op_proc_cond);
+        pthread_mutex_unlock(&op_proc_lock);
+
+        free(request->key);
+        data_destroy(request->data);
+        free(request);
+        printf("[INFO] Thread #%d: pedido processado!\n", tid);
+    }
+    return 0;
 }
 
 void queue_add_request(request_t *request)
@@ -352,9 +398,13 @@ void queue_add_request(request_t *request)
 request_t *queue_get_request()
 {
     pthread_mutex_lock(&queue_lock);
-    while (queue_head == NULL)
+    while (!terminate && queue_head == NULL)
     {
         pthread_cond_wait(&queue_cond, &queue_lock);
+    }
+    if (terminate)
+    {
+        return NULL;
     }
     request_t *request = queue_head;
     queue_head = request->next;

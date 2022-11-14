@@ -67,7 +67,7 @@ int network_server_init(short port)
 
 int network_main_loop(int listening_socket)
 {
-    struct pollfd desc_set[NFDESC]; // ! tamanho?
+    struct pollfd desc_set[NFDESC] = {0}; // ! tamanho?
     int count, i, error;
 
     struct sockaddr_in my_soc = {0};
