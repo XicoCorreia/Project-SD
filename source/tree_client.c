@@ -77,7 +77,7 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                printf("'%s':  numero identificador da operacão put para entrada %s\n", i, entry->key);
+                printf("'%d': id da operacão 'put' para a entrada '%s'\n", i, entry->key);
             }
             entry_destroy(entry);
         }
@@ -97,7 +97,7 @@ int main(int argc, char const *argv[])
             }
             else if (data->datasize == 0)
             {
-                printf("Nao existe entrada associada a chave '%s'.\n", key);
+                printf("Não existe entrada associada à chave '%s'.\n", key);
             }
             else
             {
@@ -123,7 +123,7 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                printf("'%s':  numero identificador da operacão del para entrada %s\n", i, key);
+                printf("'%d': id da operacão 'del' para a entrada '%s'\n", i, key);
             }
         }
         else if (strcmp(token, "verify") == 0)

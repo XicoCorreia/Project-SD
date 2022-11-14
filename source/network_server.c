@@ -9,6 +9,7 @@
 #include "message-private.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -17,10 +18,11 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <poll.h>
+
+#define NFDESC 10
+#define TIMEOUT 50
 
 int sockfd;
-int desc_set[0];
 
 void sigint_handler()
 {
@@ -65,8 +67,7 @@ int network_server_init(short port)
 
 int network_main_loop(int listening_socket)
 {
-    int size = 1000;
-    struct pollfd desc_set[size];  //tamanho??
+    struct pollfd desc_set[NFDESC]; // ! tamanho?
     int count, i, error;
 
     struct sockaddr_in my_soc = {0};
@@ -79,7 +80,7 @@ int network_main_loop(int listening_socket)
         return -1;
     }
 
-    for (i = 0; i < size; i++)
+    for (i = 0; i < NFDESC; i++)
     {
         desc_set[i].fd = -1;
     }
@@ -92,11 +93,11 @@ int network_main_loop(int listening_socket)
     signal_sigpipe(NULL);
 
     int k;
-    while (k = poll(desc_set, count, 10) >= 0) 
+    while ((k = poll(desc_set, count, TIMEOUT)) >= 0)
     {
         if (k > 0)
-        {    
-            if ((desc_set[0].revents & POLLIN) && (count < size)) //necessário "checkar"?! usar "anel"?
+        {
+            if ((desc_set[0].revents & POLLIN) && (count < NFDESC)) // ! necessário "checkar"? usar "anel"?
             {
                 if ((desc_set[count].fd = accept(desc_set[0].fd, (struct sockaddr *)&my_soc, &addr_size)) != -1)
                 {
@@ -126,7 +127,7 @@ int network_main_loop(int listening_socket)
                             printf("Foi fechada a ligação com o cliente.\n");
                         }
                     }
-                    else 
+                    else
                     {
                         close(desc_set[i].fd);
                         desc_set[i].fd = -1;
@@ -134,7 +135,8 @@ int network_main_loop(int listening_socket)
                     }
                 }
                 error = 0;
-                getsockopt(desc_set[i].fd, SOL_SOCKET, SO_ERROR, &error, sizeof(int));
+                socklen_t optlen = sizeof(int);
+                getsockopt(desc_set[i].fd, SOL_SOCKET, SO_ERROR, &error, &optlen);
                 if ((error != 0) || (desc_set[i].revents & POLLHUP))
                 {
                     close(desc_set[i].fd);

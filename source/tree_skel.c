@@ -74,7 +74,7 @@ void tree_skel_destroy()
     int *r;
     for (int i = 0; i < num_threads; i++)
     {
-        if (pthread_join(&thread[i], (void **)&r) != 0)
+        if (pthread_join(thread[i], (void **)&r) != 0)
         {
             perror("tree_skel_destroy");
             exit(EXIT_FAILURE);
