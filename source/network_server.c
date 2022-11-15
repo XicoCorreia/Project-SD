@@ -61,12 +61,12 @@ int network_server_init(short port)
         return -1;
     }
 
-    signal_sigint(sigint_handler);
     return sockfd;
 }
 
 int network_main_loop(int listening_socket)
 {
+    signal_sigint(sigint_handler);
     struct pollfd desc_set[NFDESC] = {0}; // ! tamanho?
     int count, i, error;
 

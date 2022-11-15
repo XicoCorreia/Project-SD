@@ -76,7 +76,7 @@ int tree_skel_init(int N)
 void tree_skel_destroy()
 {
     terminate = 1;
-    pthread_cond_signal(&queue_cond);
+    pthread_cond_broadcast(&queue_cond);
     int *r;
     for (int i = 0; i < num_threads; i++)
     {
@@ -404,6 +404,8 @@ request_t *queue_get_request()
     }
     if (terminate)
     {
+        pthread_cond_signal(&queue_cond);
+        pthread_mutex_unlock(&queue_lock);
         return NULL;
     }
     request_t *request = queue_head;
