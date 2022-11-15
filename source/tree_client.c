@@ -8,6 +8,7 @@
 #include "client_stub-private.h"
 #include "client_stub.h"
 #include "message-private.h"
+#include "op_status-private.h"
 #include "tree_client-private.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -129,27 +130,31 @@ int main(int argc, char const *argv[])
         else if (strcmp(token, "verify") == 0)
         {
             char *key = strtok(NULL, " ");
-            int n_op = atoi(key);
             if (key == NULL)
             {
                 printf("Erro a ler argumentos.\n");
                 continue;
             }
+            int n_op = atoi(key);
+            if (n_op <= 0)
+            {
+                printf("'%d': número de operação inválido\n", n_op);
+                continue;
+            }
 
             int i = rtree_verify(rtree, n_op);
-            if (i == -1)
+            if (i == OP_UNAVAILABLE)
             {
-                printf("'%s': numero nao associado a uma operacao\n", key);
+                printf("'%d': número não associado a uma operação\n", n_op);
             }
-            else if (i == 1)
+            else if (i == OP_SUCCESSFUL)
             {
-                printf("'%s': operação executada\n", key);
+                printf("'%d': operação executada\n", key);
             }
-            else
+            else if (i == OP_WAITING)
             {
-                printf("'%s': operação ainda nao foi executada\n", key);
+                printf("'%d': operação ainda não foi executada\n", n_op);
             }
-            // ? free key
         }
         else if (strcmp(token, "size") == 0)
         {

@@ -7,6 +7,7 @@
  */
 #include "tree_skel.h"
 #include "entry.h"
+#include "op_status-private.h"
 #include "string.h"
 #include "tree.h"
 #include "tree_skel-private.h"
@@ -281,7 +282,6 @@ int invoke(MessageT *msg)
     }
 
     case MESSAGE_T__OPCODE__OP_VERIFY: {
-        // TODO
         int op_n = *(int *)msg->data.data;
         int status = verify(op_n);
         msg->opcode = MESSAGE_T__OPCODE__OP_VERIFY + 1;
@@ -289,6 +289,7 @@ int invoke(MessageT *msg)
         msg->data.len = sizeof(int);
         msg->data.data = malloc(msg->data.len);
         *((int *)msg->data.data) = status;
+        break;
     }
 
     default:
@@ -304,11 +305,11 @@ int invoke(MessageT *msg)
 
 int verify(int op_n)
 {
-    int status = 0;
+    int status = OP_SUCCESSFUL;
     pthread_mutex_lock(&op_proc_lock);
-    if (op_n > 0 || op_n > op_proc.max_proc)
+    if (op_n <= 0 || op_n > op_proc.max_proc)
     {
-        status = -1; // ! -1 vs 0 vs outros (e.g. op > last_assigned)
+        status = OP_UNAVAILABLE;
     }
     else
     {
@@ -316,7 +317,7 @@ int verify(int op_n)
         {
             if (op_proc.in_progress[i] == op_n)
             {
-                status = -1;
+                status = OP_WAITING;
                 break;
             }
         }
