@@ -68,7 +68,7 @@ int network_main_loop(int listening_socket)
 {
     signal_sigint(sigint_handler);
     struct pollfd desc_set[NFDESC] = {0}; // ! tamanho?
-    int count, index, max_ind; i, j, error;
+    int count, index, max_ind, i, error;
 
     struct sockaddr_in my_soc = {0};
     socklen_t addr_size = sizeof my_soc;
@@ -101,13 +101,14 @@ int network_main_loop(int listening_socket)
         {
             if ((desc_set[0].revents & POLLIN) && (count < NFDESC))
             {
-                if((index == NFDESC) || (desc_set[index].fd != -1)) {
+                if ((index == NFDESC) || (desc_set[index].fd != -1))
+                {
                     if (max_ind < NFDESC - 1)
                     {
                         index = max_ind + 1;
-                    } 
+                    }
                     else
-                    { 
+                    {
                         for (i = 1; i < NFDESC; i++)
                         {
                             if (desc_set[i].fd == -1)
@@ -152,18 +153,17 @@ int network_main_loop(int listening_socket)
                             count--;
                             if (i == max_ind)
                             {
-                                for(j = max_ind; j > 0; j++) 
+                                for (int j = max_ind; j > 0; j++)
                                 {
                                     if (desc_set[j].fd != -1)
                                     {
                                         max_ind = j;
                                         break;
                                     }
-                                    else if (j == 1) //situação em que não há ligações abertas
+                                    else if (j == 1) // situação em que não há ligações abertas
                                     {
                                         max_ind = 0;
                                     }
-                                    
                                 }
                             }
                             printf("Foi fechada a ligação com o cliente.\n");
@@ -176,18 +176,17 @@ int network_main_loop(int listening_socket)
                         count--;
                         if (i == max_ind)
                         {
-                            for(j = max_ind; j > 0; j++) 
+                            for (int j = max_ind; j > 0; j++)
                             {
                                 if (desc_set[j].fd != -1)
                                 {
                                     max_ind = j;
                                     break;
                                 }
-                                else if (j == 1) //situação em que não há ligações abertas
+                                else if (j == 1) // situação em que não há ligações abertas
                                 {
                                     max_ind = 0;
                                 }
-                                
                             }
                         }
                         printf("Foi fechada a ligação com o cliente.\n");
@@ -203,18 +202,17 @@ int network_main_loop(int listening_socket)
                     count--;
                     if (i == max_ind)
                     {
-                        for(j = max_ind; j > 0; j++) 
+                        for (int j = max_ind; j > 0; j++)
                         {
                             if (desc_set[j].fd != -1)
                             {
                                 max_ind = j;
                                 break;
                             }
-                            else if (j == 1) //situação em que não há ligações abertas
+                            else if (j == 1) // situação em que não há ligações abertas
                             {
                                 max_ind = 0;
                             }
-                            
                         }
                     }
                     printf("Foi fechada a ligação com o cliente.\n");
