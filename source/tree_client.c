@@ -138,7 +138,7 @@ int main(int argc, char const *argv[])
             int n_op = atoi(key);
             if (n_op <= 0)
             {
-                printf("'%d': número de operação inválido\n", n_op);
+                printf("'%s': identificador de operação inválido\n", key);
                 continue;
             }
 
