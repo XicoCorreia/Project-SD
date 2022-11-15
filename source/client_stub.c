@@ -276,18 +276,10 @@ int rtree_verify(struct rtree_t *rtree, int op_n)
     msg.opcode = MESSAGE_T__OPCODE__OP_VERIFY;
     msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
     msg.data.len = sizeof(int);
-    msg.data.data = malloc(msg.data.len);
-    if (msg.data.data == NULL)
+    msg.data.data = (uint8_t *)&op_n;
+    if (network_send_receive(rtree, &msg) == NULL)
     {
-        perror("rtree_verify");
-    }
-    else
-    {
-        *((int *)msg.data.data) = op_n;
-        if (network_send_receive(rtree, &msg) == NULL)
-        {
-            return -1;
-        }
+        return -1;
     }
     if (msg.opcode == MESSAGE_T__OPCODE__OP_ERROR)
     {

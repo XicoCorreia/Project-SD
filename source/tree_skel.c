@@ -283,6 +283,7 @@ int invoke(MessageT *msg)
 
     case MESSAGE_T__OPCODE__OP_VERIFY: {
         int op_n = *(int *)msg->data.data;
+        free(msg->data.data);
         int status = verify(op_n);
         msg->opcode = MESSAGE_T__OPCODE__OP_VERIFY + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
