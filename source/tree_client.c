@@ -149,7 +149,7 @@ int main(int argc, char const *argv[])
             }
             else if (i == OP_SUCCESSFUL)
             {
-                printf("'%d': operação executada\n", key);
+                printf("'%d': operação executada\n", n_op);
             }
             else if (i == OP_WAITING)
             {
