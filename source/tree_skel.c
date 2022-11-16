@@ -114,7 +114,9 @@ int invoke(MessageT *msg)
     switch (msg->opcode)
     {
     case MESSAGE_T__OPCODE__OP_SIZE: {
+        pthread_mutex_lock(&tree_lock);
         int size = tree_size(tree);
+        pthread_mutex_unlock(&tree_lock);
         msg->data.len = sizeof(int);
         msg->data.data = malloc(sizeof(int));
         *((int *)msg->data.data) = size;
@@ -124,7 +126,9 @@ int invoke(MessageT *msg)
     }
 
     case MESSAGE_T__OPCODE__OP_HEIGHT: {
+        pthread_mutex_lock(&tree_lock);
         int height = tree_height(tree);
+        pthread_mutex_unlock(&tree_lock);
         msg->data.len = sizeof(int);
         msg->data.data = malloc(sizeof(int));
         *((int *)msg->data.data) = height;
@@ -169,7 +173,9 @@ int invoke(MessageT *msg)
 
     case MESSAGE_T__OPCODE__OP_GET: {
         char *key = (char *)msg->data.data;
+        pthread_mutex_lock(&tree_lock);
         struct data_t *value = tree_get(tree, key);
+        pthread_mutex_unlock(&tree_lock);
 
         if (value == NULL)
         {
@@ -229,6 +235,7 @@ int invoke(MessageT *msg)
 
     case MESSAGE_T__OPCODE__OP_GETKEYS: {
         KeysT keys = KEYS_T__INIT;
+        pthread_mutex_lock(&tree_lock);
         keys.keys = tree_get_keys(tree);
 
         if (keys.keys == NULL)
@@ -239,8 +246,8 @@ int invoke(MessageT *msg)
             msg->data.data = NULL;
             break;
         }
-
         keys.n_keys = tree_size(tree);
+        pthread_mutex_unlock(&tree_lock);
         msg->data.len = keys_t__get_packed_size(&keys);
         msg->data.data = malloc(msg->data.len);
         keys_t__pack(&keys, msg->data.data);
@@ -251,6 +258,7 @@ int invoke(MessageT *msg)
     }
 
     case MESSAGE_T__OPCODE__OP_GETVALUES: {
+        pthread_mutex_lock(&tree_lock);
         struct data_t **data_arr = (struct data_t **)tree_get_values(tree);
         if (data_arr == NULL)
         {
@@ -263,6 +271,7 @@ int invoke(MessageT *msg)
         ValuesT *values = malloc(sizeof(ValuesT)); // free_unpacked requer memória dinâmica
         values_t__init(values);
         values->n_values = tree_size(tree);
+        pthread_mutex_unlock(&tree_lock);
         values->values = malloc(sizeof(ProtobufCBinaryData) * values->n_values);
         for (int i = 0; i < values->n_values; i++)
         {
