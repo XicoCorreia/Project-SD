@@ -10,10 +10,12 @@
 #include "message-private.h"
 #include "op_status-private.h"
 #include "tree_client-private.h"
+#include <poll.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 
 size_t LINE_SIZE = 2048;
 struct rtree_t *rtree;
@@ -34,11 +36,45 @@ int main(int argc, char const *argv[])
     }
 
     signal_sigint(tree_client_exit);
-    while (true)
+
+    char str[LINE_SIZE];
+    memset(str, 0, LINE_SIZE);
+    int nread = 0;
+
+    struct pollfd desc_set[2];
+    struct pollfd *stdin_desc = &desc_set[0];
+    struct pollfd *rtree_desc = &desc_set[1];
+    stdin_desc->fd = fileno(stdin); // stdin (cliente)
+    stdin_desc->events = POLLIN;
+    rtree_desc->fd = rtree->sockfd; // ligação com o servidor
+    rtree_desc->events = POLLIN;
+
+    // esperamos por input do cliente, ou fecho do servidor
+    while (poll(desc_set, 2, -1) > 0)
     {
-        char str[LINE_SIZE];
-        fgets(str, LINE_SIZE, stdin);
-        str[strlen(str) - 1] = '\0';
+        if (rtree_desc->revents & POLLHUP)
+        {
+            printf("O servidor terminou a ligação.\n");
+            break;
+        }
+        if (rtree_desc->revents & POLLIN) // recebemos mensagem do servidor
+        {
+            ioctl(rtree_desc->fd, FIONREAD, &nread);
+            if (nread == 0) // o servidor fechou a ligação (0 bytes para ler)
+            {
+                printf("O servidor terminou a ligação.\n");
+                break;
+            }
+        }
+        ioctl(stdin_desc->fd, FIONREAD, &nread);
+        if (nread > LINE_SIZE)
+        {
+            printf("Excedeu o limite de tamanho do comando (%ld caracteres).\n", LINE_SIZE);
+            // lidar com mensagem demasiado comprida (flush o stdin ao ler em loop)
+            continue;
+        }
+        read_all(stdin_desc->fd, str, nread);
+        str[nread - 1] = '\0';
 
         char *token = strtok(str, " ");
         if (token == NULL)
