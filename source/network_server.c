@@ -6,6 +6,7 @@
  *   Filipe Egipto - fc56272
  */
 #include "network_server.h"
+#include "network_server-private.h"
 #include "message-private.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -64,6 +65,36 @@ int network_server_init(short port)
     return sockfd;
 }
 
+int get_new_max(int cur_max, struct pollfd **desc_set)
+{
+    int j;
+    for (j = cur_max; j > 0; j--)
+    {
+        if ((desc_set[j]->fd) != -1)
+            return j + 1;
+    }
+    return 1; // situação em que não há clientes ligados
+}
+
+int get_next_index(struct pollfd **desc_set)
+{
+    int j;
+    for (j = 1; j < NFDESC; j++)
+    {
+        if ((desc_set[j]->fd) == -1)
+        {
+            return j;
+        }
+    }
+    return 1; //!para gcc não se queixar 
+}
+
+void close_socket(int n, struct pollfd **set)
+{
+    close(set[n]->fd);
+    set[n]->fd = -1;
+}
+
 int network_main_loop(int listening_socket)
 {
     signal_sigint(sigint_handler);
@@ -90,7 +121,7 @@ int network_main_loop(int listening_socket)
 
     count = 1;
     index = 1;
-    max_ind = 0;
+    max_ind = 1;
 
     signal_sigpipe(NULL);
 
@@ -101,23 +132,9 @@ int network_main_loop(int listening_socket)
         {
             if ((desc_set[0].revents & POLLIN) && (count < NFDESC))
             {
-                if ((index == NFDESC) || (desc_set[index].fd != -1))
+                if ((index == NFDESC) || (desc_set[index].fd != -1)) // index corresponde a uma posição inexistente ou a uma posição a ser usada
                 {
-                    if (max_ind < NFDESC - 1)
-                    {
-                        index = max_ind + 1;
-                    }
-                    else
-                    {
-                        for (i = 1; i < NFDESC; i++)
-                        {
-                            if (desc_set[i].fd == -1)
-                            {
-                                index = i;
-                                break;
-                            }
-                        }
-                    }
+                    index = get_next_index((struct pollfd **)desc_set);
                 }
                 if ((desc_set[index].fd = accept(desc_set[0].fd, (struct sockaddr *)&my_soc, &addr_size)) != -1)
                 {
@@ -125,9 +142,9 @@ int network_main_loop(int listening_socket)
                     desc_set[index].events = POLLIN;
                     count++;
                     index++;
-                    if ((index != NFDESC) && (max_ind < index - 1))
+                    if (max_ind < index)
                     {
-                        max_ind = index - 1;
+                        max_ind = index;
                     }
                 }
             }
@@ -148,46 +165,22 @@ int network_main_loop(int listening_socket)
                         }
                         if (network_send(desc_set[i].fd, msg) == -1)
                         {
-                            close(desc_set[i].fd);
-                            desc_set[i].fd = -1;
+                            close_socket(i, (struct pollfd **)desc_set);
                             count--;
-                            if (i == max_ind)
+                            if (i + 1 == max_ind)
                             {
-                                for (int j = max_ind; j > 0; j++)
-                                {
-                                    if (desc_set[j].fd != -1)
-                                    {
-                                        max_ind = j;
-                                        break;
-                                    }
-                                    else if (j == 1) // situação em que não há ligações abertas
-                                    {
-                                        max_ind = 0;
-                                    }
-                                }
+                                max_ind = get_new_max(max_ind, (struct pollfd **)desc_set);
                             }
                             printf("Foi fechada a ligação com o cliente.\n");
                         }
                     }
                     else
                     {
-                        close(desc_set[i].fd);
-                        desc_set[i].fd = -1;
+                        close_socket(i, (struct pollfd **)desc_set);
                         count--;
-                        if (i == max_ind)
+                        if (i + 1 == max_ind)
                         {
-                            for (int j = max_ind; j > 0; j++)
-                            {
-                                if (desc_set[j].fd != -1)
-                                {
-                                    max_ind = j;
-                                    break;
-                                }
-                                else if (j == 1) // situação em que não há ligações abertas
-                                {
-                                    max_ind = 0;
-                                }
-                            }
+                            max_ind = get_new_max(max_ind, (struct pollfd **)desc_set);
                         }
                         printf("Foi fechada a ligação com o cliente.\n");
                     }
@@ -197,23 +190,11 @@ int network_main_loop(int listening_socket)
                 getsockopt(desc_set[i].fd, SOL_SOCKET, SO_ERROR, &error, &optlen);
                 if ((error != 0) || (desc_set[i].revents & POLLHUP))
                 {
-                    close(desc_set[i].fd);
-                    desc_set[i].fd = -1;
+                    close_socket(i, (struct pollfd **)desc_set);
                     count--;
-                    if (i == max_ind)
+                    if (i + 1 == max_ind)
                     {
-                        for (int j = max_ind; j > 0; j++)
-                        {
-                            if (desc_set[j].fd != -1)
-                            {
-                                max_ind = j;
-                                break;
-                            }
-                            else if (j == 1) // situação em que não há ligações abertas
-                            {
-                                max_ind = 0;
-                            }
-                        }
+                        max_ind = get_new_max(max_ind, (struct pollfd **)desc_set);
                     }
                     printf("Foi fechada a ligação com o cliente.\n");
                 }
