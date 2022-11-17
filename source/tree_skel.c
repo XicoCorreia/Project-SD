@@ -240,6 +240,7 @@ int invoke(MessageT *msg)
 
         if (keys.keys == NULL)
         {
+            pthread_mutex_unlock(&tree_lock);
             msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
             msg->data.len = 0;
@@ -262,6 +263,7 @@ int invoke(MessageT *msg)
         struct data_t **data_arr = (struct data_t **)tree_get_values(tree);
         if (data_arr == NULL)
         {
+            pthread_mutex_unlock(&tree_lock);
             msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
             msg->data.len = 0;
