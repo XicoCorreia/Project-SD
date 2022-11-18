@@ -6,6 +6,7 @@
  *   Filipe Egipto - fc56272
  */
 #include "network_server.h"
+#include "network_server-private.h"
 #include "message-private.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -19,9 +20,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define NFDESC 10
-#define TIMEOUT 50
-
+int nfdesc = 4;
 int sockfd;
 
 void sigint_handler()
@@ -64,10 +63,28 @@ int network_server_init(short port)
     return sockfd;
 }
 
+int close_server_socket(int sockfd)
+{
+    perror("network_main_loop");
+    close(sockfd);
+    return -1;
+}
+
+void close_client_socket(struct pollfd *set, int index)
+{
+    close(set[index].fd);
+    set[index].fd = -1;
+    printf("Foi fechada a ligação com o cliente.\n");
+}
+
 int network_main_loop(int listening_socket)
 {
     signal_sigint(sigint_handler);
-    struct pollfd desc_set[NFDESC] = {0}; // ! tamanho?
+    struct pollfd *desc_set = malloc(sizeof(struct pollfd) * nfdesc);
+    if (desc_set == NULL)
+    {
+        return close_server_socket(listening_socket);
+    }
     int count, i, error;
 
     struct sockaddr_in my_soc = {0};
@@ -75,12 +92,10 @@ int network_main_loop(int listening_socket)
 
     if (listen(listening_socket, 0) < 0)
     {
-        perror("network_main_loop");
-        close(listening_socket);
-        return -1;
+        return close_server_socket(listening_socket);
     }
 
-    for (i = 0; i < NFDESC; i++)
+    for (i = 0; i < nfdesc; i++)
     {
         desc_set[i].fd = -1;
     }
@@ -93,12 +108,25 @@ int network_main_loop(int listening_socket)
     signal_sigpipe(NULL);
 
     int k;
-    while ((k = poll(desc_set, count, TIMEOUT)) >= 0)
+    while ((k = poll(desc_set, count, -1)) >= 0)
     {
         if (k > 0)
         {
-            if ((desc_set[0].revents & POLLIN) && (count < NFDESC)) // ! necessário "checkar"? usar "anel"?
+            if ((desc_set[0].revents & POLLIN))
             {
+                if (count == nfdesc) //incrementar o tamanho do array de sockets
+                {
+                    nfdesc *= 2;
+                    desc_set = realloc(desc_set, sizeof(struct pollfd) * nfdesc);
+                    if (desc_set == NULL)
+                    {
+                        return close_server_socket(listening_socket);
+                    }
+                    for (i = count; i < nfdesc; i++)
+                    {
+                        desc_set[i].fd = -1;
+                    }
+                }
                 if ((desc_set[count].fd = accept(desc_set[0].fd, (struct sockaddr *)&my_soc, &addr_size)) != -1)
                 {
                     printf("Ligação estabelecida com o cliente '%s:%d'\n", inet_ntoa(my_soc.sin_addr), my_soc.sin_port);
@@ -123,16 +151,12 @@ int network_main_loop(int listening_socket)
                         }
                         if (network_send(desc_set[i].fd, msg) == -1)
                         {
-                            close(desc_set[i].fd);
-                            desc_set[i].fd = -1;
-                            printf("Foi fechada a ligação com o cliente.\n");
+                            close_client_socket(desc_set, i);
                         }
                     }
                     else
                     {
-                        close(desc_set[i].fd);
-                        desc_set[i].fd = -1;
-                        printf("Foi fechada a ligação com o cliente.\n");
+                        close_client_socket(desc_set, i);
                     }
                 }
                 error = 0;
@@ -140,9 +164,7 @@ int network_main_loop(int listening_socket)
                 getsockopt(desc_set[i].fd, SOL_SOCKET, SO_ERROR, &error, &optlen);
                 if ((error != 0) || (desc_set[i].revents & POLLHUP))
                 {
-                    close(desc_set[i].fd);
-                    desc_set[i].fd = -1;
-                    printf("Foi fechada a ligação com o cliente.\n");
+                    close_client_socket(desc_set, i);
                 }
             }
         }
