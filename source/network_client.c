@@ -56,6 +56,8 @@ int network_connect(struct rtree_t *rtree)
         return -1;
     }
 
+    printf("Ligação estabelecida com o servidor '%s:%d'\n", rtree->address, rtree->port);
+
     signal_sigpipe(NULL);
     freeaddrinfo(res);
     rtree->sockfd = sockfd;

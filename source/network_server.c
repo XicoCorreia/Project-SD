@@ -70,7 +70,7 @@ int network_server_init(short port)
 
 void close_client_socket(struct pollfd *set, int index)
 {
-    if (close(set[index].fd == -1))
+    if (close(set[index].fd) == -1)
     {
         perror("close_client_socket");
     }
@@ -187,7 +187,6 @@ MessageT *network_receive(int client_socket)
 
     if (len <= 0)
     {
-        printf("Tamanho de buffer pedido inválido: %d\n", len);
         return NULL;
     }
 
