@@ -27,26 +27,38 @@ Alvos do Makefile:
 - `make proto`: produz os ficheiros `sdmessage.pb-c.c/.h` do ficheiro `.proto`
 - `make clean`: limpa os ficheiros produzidos pelo compilador
 - `make zip`: produz um ficheiro de arquivos para entrega do projeto
+- `make withtree`: compila o cliente e o servidor, usando o tree_fornecido.o
 
-Nota: Não foi incluído o ficheiro `tree.c`, portanto terá de ser colocado na pasta `./source`.
-
-Alternativamente pode ser usado o ficheiro `tree.o`, copiando-o da raíz para `./object`:
-
-```shell
-$ cp tree_fornecido.o object/tree.o && make
-```
+Nota: Não foi incluído o ficheiro `tree.c` portanto deve ser colocado na pasta `./source`.
+Como alternativa pode ser usado o alvo `make withtree`.
 
 ### Comandos do cliente
 
-- `put <key> <data>`: cria ou substitui o valor `value` na entrada com a chave `key`
+- `put <key> <data>`: (async) cria ou substitui o valor `value` na entrada com a chave `key`
 - `get <key>`: obtém o valor associado à chave `value` caso exista
-- `del <key>`: apaga a entrada com a chave `key`
+- `del <key>`: (async) apaga a entrada com a chave `key`
 - `size`: devolve o tamanho da árvore
 - `height`: devolve a altura da árvore
 - `getkeys`: devolve uma lista ordenada de todas as chaves
 - `getvalues`: devolve uma lista de todos os valores, ordenada pelas chaves respetivas
-- `quit`: termina o programa
+- `verify <op_n>`: devolve o estado de execução da operação `op_n`
+- `quit` ou `exit`: termina o programa
 
-### Notas sobre o servidor
+### Notas: Ligação entre o cliente e o servidor
 
 Para terminar a execução de forma segura pode ser enviado o sinal SIGINT (e.g. CTRL+C).
+Tipicamente os clientes encerram graciosamente quando detetam que o servidor encerrou.
+
+O mesmo se aplica ao servidor quando um cliente termina a ligação, tanto através de SIGINT
+como através do comando *quit/exit*.
+
+### Notas: Limitações na gestão de novos clientes
+
+A gestão no servidor de novas ligações é relativamente ingénua.
+O vetor `desc_set` cresce tanto quanto necessário, duplicando de tamanho sucessivamente.
+
+Dados os critérios de avaliação, mantivemos esta opção. Considerámos outras opções:
+
+- manter uma pilha de posições recentemente libertadas e reaproveitá-las;
+- descartar posições do vetor em que `fd == -1` antes de realocar memória (estilo GC);
+- (incompatível com a assinatura da função `poll`) utilizar uma lista duplamente ligada.
