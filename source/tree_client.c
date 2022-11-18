@@ -38,6 +38,7 @@ int main(int argc, char const *argv[])
     rtree = rtree_connect(argv[1]);
     if (rtree == NULL)
     {
+        free(line);
         exit(EXIT_FAILURE);
     }
 
