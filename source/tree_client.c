@@ -28,7 +28,7 @@ int main(int argc, char const *argv[])
         printf("Exemplo de uso: ./tree-client 127.0.0.1:12345\n");
         exit(EXIT_FAILURE);
     }
-    size_t line_size = 20;
+    size_t line_size = 20; // valor inicial, cresce consoante o necessário
     line = malloc(line_size);
     if (line == NULL)
     {

@@ -25,7 +25,7 @@
  * evita free indeterminado devido a um SIGINT prematuro.
  */
 struct pollfd *desc_set = NULL;
-int nfdesc = 2;
+int nfdesc = 16;
 int sockfd;
 
 void sigint_handler()
