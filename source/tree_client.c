@@ -15,9 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
 
-size_t LINE_SIZE = 2048;
+char *line;
 struct rtree_t *rtree;
 
 int main(int argc, char const *argv[])
@@ -29,6 +28,13 @@ int main(int argc, char const *argv[])
         printf("Exemplo de uso: ./tree-client 127.0.0.1:12345\n");
         exit(EXIT_FAILURE);
     }
+    size_t line_size = 20;
+    line = malloc(line_size);
+    if (line == NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
+
     rtree = rtree_connect(argv[1]);
     if (rtree == NULL)
     {
@@ -36,10 +42,6 @@ int main(int argc, char const *argv[])
     }
 
     signal_sigint(tree_client_exit);
-
-    char str[LINE_SIZE];
-    memset(str, 0, LINE_SIZE);
-    int nread = 0;
 
     struct pollfd desc_set[2];
     struct pollfd *stdin_desc = &desc_set[0];
@@ -59,27 +61,27 @@ int main(int argc, char const *argv[])
         }
         if (rtree_desc->revents & POLLIN) // recebemos mensagem do servidor
         {
-            ioctl(rtree_desc->fd, FIONREAD, &nread);
-            if (nread == 0) // o servidor fechou a ligação (0 bytes para ler)
+            if (available_read_bytes(rtree_desc->fd) == 0) // 0 bytes para ler
             {
                 printf("O servidor terminou a ligação.\n");
                 break;
             }
         }
-        ioctl(stdin_desc->fd, FIONREAD, &nread);
-        if (nread > LINE_SIZE)
+
+        if ((stdin_desc->revents & POLLIN) == 0)
         {
-            printf("Excedeu o limite de tamanho do comando (%ld caracteres).\n", LINE_SIZE);
-            // lidar com mensagem demasiado comprida (flush o stdin ao ler em loop)
             continue;
         }
-        read_all(stdin_desc->fd, str, nread);
-        str[nread - 1] = '\0';
-
-        char *token = strtok(str, " ");
+        if ((line_size = getline(&line, &line_size, stdin)) == -1)
+        {
+            perror("main");
+            tree_client_exit();
+        }
+        line[line_size - 1] = '\0';
+        char *token = strtok(line, " ");
         if (token == NULL)
         {
-            printf("Comando nao reconhecido. Tente novamente.\n");
+            printf("Comando não reconhecido. Tente novamente.\n");
             continue;
         }
 
@@ -295,5 +297,6 @@ void tree_client_exit()
     {
         perror("tree_client");
     }
+    free(line);
     exit(status);
 }

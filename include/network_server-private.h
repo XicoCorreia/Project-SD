@@ -3,15 +3,18 @@
 
 #include <poll.h>
 
-/* Esta função fecha o socket com o descritor de ficheiro dado.
- * sockfd deve corresponder ao socket do servidor que aceita novos clientes.
- * Devolve o código de erro (errno) e imprime o erro, caso exista, em stderr.
- */
-int close_server_socket(int sockfd);
-
 /* Esta função fecha o socket no índice do array de pollfd dado.
  * O valor do descritor na estrutura é colocado a -1 após fechar o socket.
  */
 void close_client_socket(struct pollfd *set, int index);
 
+/* (Re-)aloca memória para crescer (estritamente) o array de pollfd indicado,
+ * colocando os campos fd dos novos elementos a -1.
+ * Se o pointer dado em argumento for NULL, a função aloca memória de raíz.
+ * A função devolve NULL caso:
+ * - o número de elementos desejado seja negativo;
+ * - o número de elementos desejado seja inferior ao número atual de elementos;
+ * - ocorra um erro na alocação de memória.
+ */
+struct pollfd *grow_pollfds(struct pollfd *pollfds, int cur_count, int new_count);
 #endif

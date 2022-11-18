@@ -21,7 +21,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-int nfdesc = 4;
+/* Atribuir NULL permite realloc inicial (usando em grow_pollfds) e
+ * evita free indeterminado devido a um SIGINT prematuro.
+ */
+struct pollfd *desc_set = NULL;
+int nfdesc = 2;
 int sockfd;
 
 void sigint_handler()
@@ -34,7 +38,7 @@ void sigint_handler()
 
 int network_server_init(short port)
 {
-    signal_sigint(NULL); // ignora sinais SIGINT (e.g. CTRL)
+    signal_sigint(NULL); // ignora sinais SIGINT (e.g. CTRL+C)
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
@@ -64,17 +68,6 @@ int network_server_init(short port)
     return sockfd;
 }
 
-int close_server_socket(int sockfd)
-{
-    int ret = errno;
-    if (ret != 0)
-    {
-        perror("close_server_socket");
-    }
-    close(sockfd);
-    return ret;
-}
-
 void close_client_socket(struct pollfd *set, int index)
 {
     if (close(set[index].fd == -1))
@@ -88,51 +81,40 @@ void close_client_socket(struct pollfd *set, int index)
 int network_main_loop(int listening_socket)
 {
     signal_sigint(sigint_handler);
-    struct pollfd *desc_set = malloc(sizeof(struct pollfd) * nfdesc);
-    if (desc_set == NULL)
-    {
-        return close_server_socket(listening_socket);
-    }
-    int count, i, error;
 
     struct sockaddr_in my_soc = {0};
     socklen_t addr_size = sizeof my_soc;
 
     if (listen(listening_socket, 0) < 0)
     {
-        return close_server_socket(listening_socket);
+        return -1;
     }
 
-    for (i = 0; i < nfdesc; i++)
+    int count = 1;
+    desc_set = grow_pollfds(desc_set, count, nfdesc);
+    if (desc_set == NULL)
     {
-        desc_set[i].fd = -1;
+        return -1;
     }
-
     desc_set[0].fd = listening_socket;
     desc_set[0].events = POLLIN;
 
-    count = 1;
-
     signal_sigpipe(NULL);
 
-    int k;
+    int i, k, error;
     while ((k = poll(desc_set, count, -1)) >= 0)
     {
         if (k > 0)
         {
             if ((desc_set[0].revents & POLLIN))
             {
-                if (count == nfdesc) // incrementar o tamanho do array de sockets
+                if (count == nfdesc) // crescer o array de descritores de sockets
                 {
                     nfdesc *= 2;
-                    desc_set = realloc(desc_set, sizeof(struct pollfd) * nfdesc);
+                    desc_set = grow_pollfds(desc_set, count, nfdesc);
                     if (desc_set == NULL)
                     {
-                        return close_server_socket(listening_socket);
-                    }
-                    for (i = count; i < nfdesc; i++)
-                    {
-                        desc_set[i].fd = -1;
+                        return -1;
                     }
                 }
                 if ((desc_set[count].fd = accept(desc_set[0].fd, (struct sockaddr *)&my_soc, &addr_size)) != -1)
@@ -141,12 +123,22 @@ int network_main_loop(int listening_socket)
                     desc_set[count].events = POLLIN;
                     count++;
                 }
+                else
+                {
+                    perror("network_main_loop");
+                }
             }
             for (i = 1; i < count; i++)
             {
                 if (desc_set[i].revents & POLLIN)
                 {
                     MessageT *msg;
+                    if (available_read_bytes(desc_set[i].fd) == 0)
+                    {
+                        close_client_socket(desc_set, i); // o cliente fechou a ligação (0 bytes para ler)
+                        continue;
+                    }
+
                     if ((msg = network_receive(desc_set[i].fd)) != NULL)
                     {
                         int res;
@@ -162,7 +154,7 @@ int network_main_loop(int listening_socket)
                             close_client_socket(desc_set, i);
                         }
                     }
-                    else
+                    else // msg == NULL
                     {
                         close_client_socket(desc_set, i);
                     }
@@ -178,7 +170,6 @@ int network_main_loop(int listening_socket)
         }
     }
 
-    close(listening_socket);
     return 0;
 }
 
@@ -191,19 +182,12 @@ MessageT *network_receive(int client_socket)
     if (nbytes != sizeof(int))
     {
         printf("Erro a receber dados do cliente.\n");
-        close(client_socket);
         return NULL;
     }
 
-    if (len == 0)
-    {
-        return NULL; // Ligação terminada pelo cliente
-    }
-
-    if (len < 0)
+    if (len <= 0)
     {
         printf("Tamanho de buffer pedido inválido: %d\n", len);
-        close(client_socket);
         return NULL;
     }
 
@@ -262,5 +246,32 @@ int network_server_close()
         perror("network_server_close");
         return -1;
     }
+    free(desc_set);
     return 0;
+}
+
+struct pollfd *grow_pollfds(struct pollfd *pollfds, int cur_count, int new_count)
+{
+    if (new_count < 0)
+    {
+        printf("grow_pollfds: tamanho (%d) inválido.\n", new_count);
+        return NULL;
+    }
+    else if (new_count < cur_count)
+    {
+        printf("grow_pollfds: tamanho (%d) inferior ao atual (%d).\n", new_count, cur_count);
+        return NULL;
+    }
+    pollfds = reallocarray(pollfds, new_count, sizeof(struct pollfd));
+    if (pollfds == NULL)
+    {
+        perror("grow_pollfds");
+        return NULL;
+    }
+    for (; cur_count < new_count; cur_count++)
+    {
+        pollfds[cur_count].fd = -1;
+        pollfds[cur_count].revents = 0;
+    }
+    return pollfds;
 }

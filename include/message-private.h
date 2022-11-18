@@ -27,4 +27,11 @@ void signal_sigpipe(void *handler);
  */
 void signal_sigint(void *handler);
 
+/* Função que verifica se existem bytes prontos para serem lidos no
+ * descritor de ficheiro indicado.
+ * Esta função serve sobretudo para verificar se um socket foi fechado
+ * pelo nó remoto após receber um evento POLLIN.
+ */
+int available_read_bytes(int fd);
+
 #endif

@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
 int read_all(int sock, void *buf, int len)
@@ -78,4 +79,11 @@ void signal_sigint(void *handler)
         perror("signal_sigint");
         exit(EXIT_FAILURE);
     }
+}
+
+int available_read_bytes(int fd)
+{
+    int nread = 0;
+    ioctl(fd, FIONREAD, &nread);
+    return nread;
 }
