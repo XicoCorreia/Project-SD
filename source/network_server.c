@@ -6,9 +6,10 @@
  *   Filipe Egipto - fc56272
  */
 #include "network_server.h"
-#include "network_server-private.h"
 #include "message-private.h"
+#include "network_server-private.h"
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <signal.h>
@@ -65,14 +66,21 @@ int network_server_init(short port)
 
 int close_server_socket(int sockfd)
 {
-    perror("network_main_loop");
+    int ret = errno;
+    if (ret != 0)
+    {
+        perror("close_server_socket");
+    }
     close(sockfd);
-    return -1;
+    return ret;
 }
 
 void close_client_socket(struct pollfd *set, int index)
 {
-    close(set[index].fd);
+    if (close(set[index].fd == -1))
+    {
+        perror("close_client_socket");
+    }
     set[index].fd = -1;
     printf("Foi fechada a ligação com o cliente.\n");
 }
@@ -114,7 +122,7 @@ int network_main_loop(int listening_socket)
         {
             if ((desc_set[0].revents & POLLIN))
             {
-                if (count == nfdesc) //incrementar o tamanho do array de sockets
+                if (count == nfdesc) // incrementar o tamanho do array de sockets
                 {
                     nfdesc *= 2;
                     desc_set = realloc(desc_set, sizeof(struct pollfd) * nfdesc);
