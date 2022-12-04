@@ -1,4 +1,4 @@
-# Sistemas Distribuídos 2022/2023 - Projeto (3a parte)
+# Sistemas Distribuídos 2022/2023 - Projeto (4a parte)
 
 ## Autores (Grupo SD-048)
 
@@ -14,12 +14,11 @@ No diretório de raíz do projeto, correr o seguinte:
 
 ```shell
 $ make
-$ tree-server <port> <N>
+$ tree-server <server>:<port>
 $ tree-client <server>:<port>
 ```
-Onde `server` é o endereço IP ou nome do servidor da árvore,
-`port` é o número do porto TCP onde o servidor está à espera de ligações,
-e `N` é o número de *threads* secundárias que servem os pedidos de escrita.
+Onde `server` é o endereço IP ou nome do servidor de ZooKeeper e
+`port` é o número do porto TCP onde o servidor está à espera de ligações.
 
 Alvos do Makefile:
 
