@@ -19,9 +19,13 @@ int main(int argc, char const *argv[])
         printf("Exemplo de uso: ./tree-server 12345\n");
         return -1;
     }
+    //sprintf
     /* inicialização da camada de rede */
-    // * split 
-    int socket_de_escuta = network_server_init(htons(atoi(argv[1])));
+    char *ipPort= malloc(sizeof(argv[1]));
+    char *token = strtok(ipPort, ":");
+    token = strtok(NULL, ":");
+    
+    int socket_de_escuta = network_server_init(htons(atoi(token)));
     if (socket_de_escuta == -1)
     {
         return -1;
