@@ -14,6 +14,9 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <zookeeper/zookeeper.h>
 
 uint8_t terminate = 0;
 
@@ -26,6 +29,9 @@ int num_threads;
 pthread_t *thread;
 int *thread_param;
 
+zhandle_t *zh;
+int zNodeId;
+
 pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 
@@ -35,9 +41,9 @@ pthread_cond_t op_proc_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t tree_cond = PTHREAD_COND_INITIALIZER;
 
-int tree_skel_init(int N)
+int tree_skel_init(char* my_ip)
 {
-    num_threads = N;
+    num_threads = 1;
     tree = tree_create();
     if (tree == NULL)
     {
@@ -70,6 +76,34 @@ int tree_skel_init(int N)
             perror("tree_skel_init");
             exit(EXIT_FAILURE);
         }
+    }
+    // * Ligar ao zookeeper
+    zh = zookeeper_init(my_ip,watcher_fun,2000,0,NULL,0);
+    if(zh == NULL){
+        perror("tree_skel_init - zookeeper_init");
+        exit(EXIT_FAILURE);
+    }
+    //TODO CRIAR /CHAIN
+
+    // * Criar znode
+    int new_path_len = 1024;
+    char* new_path = malloc (new_path_len);
+
+    if( ZOK != zoo_create(zh,"/chain/node",my_ip,sizeof(my_ip),& ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL | ZOO_SEQUENCE,new_path, new_path_len)) {
+        perror("tree_skel_init - zoo_create");
+        exit(EXIT_FAILURE);
+    }
+    // ID atribuido pelo zookeeper
+    char idString[4];
+    memcpy(idString, &new_path[11],4);
+    zNodeId = atoi(idString);
+    free(new_path);
+    
+    struct String_vector* children_list = malloc(sizeof(struct String_vector)); // ! nao consigo criar zoo_string
+
+    if(ZOK != zoo_wget_children(zh,"/chain",watcher_fun,"ZooKeeper Data Watcher",children_list)){
+        perror("tree_skel_init - zoo_get_children");
+        exit(EXIT_FAILURE);
     }
     return 0;
 }
