@@ -31,6 +31,7 @@ int *thread_param;
 
 zhandle_t *zh;
 int zNodeId;
+char* nextNode;
 
 pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
@@ -94,17 +95,35 @@ int tree_skel_init(char* my_ip)
         exit(EXIT_FAILURE);
     }
     // ID atribuido pelo zookeeper
-    char idString[4];
-    memcpy(idString, &new_path[11],4);
+    char idString[10];
+    memcpy(idString, &new_path[11],10);
     zNodeId = atoi(idString);
     free(new_path);
     
-    struct String_vector* children_list = malloc(sizeof(struct String_vector)); // ! nao consigo criar zoo_string
+    //Watch children & get children
+    struct String_vector* children_list = malloc(sizeof(struct String_vector)); 
 
     if(ZOK != zoo_wget_children(zh,"/chain",watcher_fun,"ZooKeeper Data Watcher",children_list)){
         perror("tree_skel_init - zoo_get_children");
         exit(EXIT_FAILURE);
     }
+
+    //Next server
+    int next = zNodeId;
+    nextNode = NULL;
+    for (int i = 0; i < children_list->count; i++)
+    {
+        char childID[10];
+        memcpy(childID,children_list->data[i][11],10);
+        int id = atoi(childID);
+        if(id > zNodeId){
+            next = id;
+            nextNode = childID;
+        }
+    }
+
+    // ? Conectar ao next server network_server_init?
+
     return 0;
 }
 
