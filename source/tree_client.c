@@ -15,12 +15,80 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <zookeeper/zookeeper.h>
 
-char *line;
-struct rtree_t *rtree;
+static const int TIMEOUT = 3000; // in ms
+static const char *root_path = "/chain";
+static char *w_context = "Head/Tail Server Watcher";
+static char *line;
+static struct rtree_t *head;
+static struct rtree_t *tail;
+static zhandle_t *zh;
+
+typedef struct String_vector zoo_string;
+
+void update_server_list(zoo_string *children_list)
+{
+    int len = 32;
+    char address_port[len];
+    char head_path[32];
+    char head_host[32];
+    char tail_path[32];
+    char tail_host[32];
+
+    sprintf(head_host, "%s:%d", head->address, head->port);
+    sprintf(head_path, "%s/%s", root_path, children_list->data[0]);
+    if (ZOK != zoo_get(zh, head_path, 0, address_port, &len, NULL))
+    {
+        fprintf(stderr, "update_server_list: Error getting data at '%s'.\n", head_path);
+        return;
+    }
+    if (len > 0 && strcmp(head_host, address_port) != 0)
+    {
+        rtree_disconnect(head); // ! verificar erros
+        head = rtree_connect(address_port);
+    }
+
+    memset(address_port, 0, len);
+    len = 32;
+    sprintf(tail_host, "%s:%d", tail->address, tail->port);
+    sprintf(tail_path, "%s/%s", root_path, children_list->data[children_list->count - 1]);
+    if (ZOK != zoo_get(zh, tail_path, 0, address_port, &len, NULL))
+    {
+        fprintf(stderr, "update_server_list: Error getting data at '%s'.\n", tail_path);
+        return;
+    }
+    if (len > 0 && strcmp(tail_host, address_port) != 0)
+    {
+        rtree_disconnect(tail); // ! verificar erros
+        tail = rtree_connect(address_port);
+    }
+}
+
+static void child_watcher(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx)
+{
+    zoo_string *children_list = (zoo_string *)malloc(sizeof(zoo_string));
+    if (state == ZOO_CONNECTED_STATE)
+    {
+        if (type == ZOO_CHILD_EVENT)
+        {
+            if (ZOK != zoo_wget_children(zh, root_path, child_watcher, w_context, children_list))
+            {
+                fprintf(stderr, "child_watcher: Error setting watch at '%s'.\n", root_path);
+            }
+            else
+            {
+                update_server_list(children_list);
+            }
+        }
+    }
+    free(children_list);
+}
 
 int main(int argc, char const *argv[])
 {
+    head = tail;
     /* Testar os argumentos de entrada */
     if (argc != 2)
     {
@@ -35,8 +103,27 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
 
-    rtree = rtree_connect(argv[1]);
-    if (rtree == NULL)
+    zh = zookeeper_init(argv[1], NULL, TIMEOUT, 0, NULL, 0);
+
+    if (zh == NULL)
+    {
+        perror("main");
+        free(line);
+        exit(EXIT_FAILURE);
+    }
+
+    zoo_string *children_list = (zoo_string *)malloc(sizeof(zoo_string));
+    if (ZOK != zoo_wget_children(zh, root_path, &child_watcher, w_context, children_list))
+    {
+        fprintf(stderr, "Error setting watch at %s!\n", root_path);
+    }
+
+    getline(&line, &line_size, stdin);
+
+    getline(&line, &line_size, stdin);
+
+    tail = rtree_connect(argv[1]);
+    if (tail == NULL)
     {
         free(line);
         exit(EXIT_FAILURE);
@@ -49,7 +136,7 @@ int main(int argc, char const *argv[])
     struct pollfd *rtree_desc = &desc_set[1];
     stdin_desc->fd = fileno(stdin); // stdin (cliente)
     stdin_desc->events = POLLIN;
-    rtree_desc->fd = rtree->sockfd; // ligação com o servidor
+    rtree_desc->fd = tail->sockfd; // ligação com o servidor
     rtree_desc->events = POLLIN;
 
     // esperamos por input do cliente, ou fecho do servidor
@@ -110,7 +197,7 @@ int main(int argc, char const *argv[])
             struct data_t *data = data_create2(strlen(value) + 1, value);
             struct entry_t *entry = entry_create(key, data);
 
-            int i = rtree_put(rtree, entry);
+            int i = rtree_put(head, entry);
             if (i == -1)
             {
                 printf("Erro no comando 'put'.\n");
@@ -130,7 +217,7 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
-            struct data_t *data = rtree_get(rtree, key);
+            struct data_t *data = rtree_get(tail, key);
             if (data == NULL)
             {
                 printf("Erro no comando 'get'.\n");
@@ -156,7 +243,7 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
-            int i = rtree_del(rtree, key);
+            int i = rtree_del(head, key);
             if (i == -1)
             {
                 printf("'%s': entrada inexistente\n", key);
@@ -181,7 +268,7 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
-            int i = rtree_verify(rtree, n_op);
+            int i = rtree_verify(tail, n_op);
             if (i == OP_UNAVAILABLE)
             {
                 printf("'%d': número não associado a uma operação\n", n_op);
@@ -197,7 +284,7 @@ int main(int argc, char const *argv[])
         }
         else if (strcmp(token, "size") == 0)
         {
-            int size = rtree_size(rtree);
+            int size = rtree_size(tail);
             if (size == -1)
             {
                 printf("Erro no comando 'size'.\n");
@@ -209,7 +296,7 @@ int main(int argc, char const *argv[])
         }
         else if (strcmp(token, "height") == 0)
         {
-            int height = rtree_height(rtree);
+            int height = rtree_height(tail);
             if (height == -1)
             {
                 printf("Erro no comando 'height'.\n");
@@ -221,7 +308,7 @@ int main(int argc, char const *argv[])
         }
         else if (strcmp(token, "getkeys") == 0)
         {
-            char **keys = rtree_get_keys(rtree);
+            char **keys = rtree_get_keys(tail);
             if (keys == NULL)
             {
                 printf("Erro no comando 'getkeys'.\n");
@@ -243,7 +330,7 @@ int main(int argc, char const *argv[])
         }
         else if (strcmp(token, "getvalues") == 0)
         {
-            struct data_t **values = (struct data_t **)rtree_get_values(rtree);
+            struct data_t **values = (struct data_t **)rtree_get_values(tail);
             if (values == NULL)
             {
                 printf("Erro no comando 'getvalues'.\n");
@@ -293,7 +380,7 @@ void print_value(struct data_t *data)
 
 void tree_client_exit()
 {
-    int status = rtree_disconnect(rtree);
+    int status = rtree_disconnect(tail);
     if (status != 0)
     {
         perror("tree_client");
