@@ -49,6 +49,8 @@ pthread_cond_t tree_cond = PTHREAD_COND_INITIALIZER;
 
 void update_next_server(zoo_string *children_list)
 {
+    char *previous_next_server = NULL;
+    memcpy(previous_next_server, next_node, sizeof(next_node));
     //Next server
     for (int i = 0; i < children_list->count; i++)
     {
@@ -60,7 +62,7 @@ void update_next_server(zoo_string *children_list)
             memcpy(next_node,children_list->data[i], sizeof(children_list->data[i]));
         }
     }
-    if(next_node != NULL){
+    if(next_node != NULL && memcmp(previous_next_server, next_node, sizeof(next_node)) != 0){
         char next_node_path[32];
         sprintf(next_node_path, "%s/%s", "/chain",next_node); 
         zoo_get(zh, next_node_path,0,next_node_ip,sizeof(next_node_ip), NULL);
@@ -72,6 +74,7 @@ void update_next_server(zoo_string *children_list)
         socket_next_Server = network_server_init(htons(atoi(token)));
         free(ip_port);
     }
+    free(previous_next_server);
 }
 
 static void watcher_fun(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx) 
