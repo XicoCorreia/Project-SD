@@ -35,6 +35,9 @@ char* next_node;
 char* next_node_ip;
 int socket_next_Server;
 
+char *root_path = "/chain";
+typedef struct String_vector zoo_string;
+
 pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 
@@ -43,6 +46,62 @@ pthread_cond_t op_proc_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t tree_cond = PTHREAD_COND_INITIALIZER;
+
+void update_next_server(zoo_string *children_list)
+{
+    //Next server
+    for (int i = 0; i < children_list->count; i++)
+    {
+        if(next_node == NULL && memcmp(znode_id,children_list->data[i],sizeof(znode_id) != 0)){
+            memcpy(next_node,children_list->data[i], sizeof(children_list->data[i]));
+        }
+        else if(next_node != NULL && memcmp(znode_id,children_list->data[i],sizeof(znode_id)) < 0 && 
+                                                    memcmp(children_list->data[i],next_node,sizeof(znode_id)) < 0){
+            memcpy(next_node,children_list->data[i], sizeof(children_list->data[i]));
+        }
+    }
+    if(next_node != NULL){
+        char next_node_path[32];
+        sprintf(next_node_path, "%s/%s", "/chain",next_node); 
+        zoo_get(zh, next_node_path,0,next_node_ip,sizeof(next_node_ip), NULL);
+
+        // * Connect with next server
+        memcpy(ip_port,next_node_ip,sizeof(next_node_ip));
+        char *token = strtok(ip_port, ":");
+        token = strtok(NULL, ":");
+        socket_next_Server = network_server_init(htons(atoi(token)));
+        free(ip_port);
+    }
+}
+
+static void watcher_fun(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx) 
+{
+    zoo_string* children_list = (zoo_string *) malloc(sizeof(zoo_string));
+    //! necessário?!
+    //int is_connected        // tornar atributo
+    //if (type == ZOO_SESSION_EVENT) {
+	//	if (state == ZOO_CONNECTED_STATE) {
+	//		is_connected = 1; 
+	//	} else {
+	//		is_connected = 0; 
+	//	}
+    //}
+    if (state == ZOO_CONNECTED_STATE) 
+    {
+        if (type == ZOO_CHILD_EVENT) 
+        {
+ 			if (ZOK != zoo_wget_children(zh, root_path, watcher_fun, watcher_ctx, children_list)) 
+            {
+ 				fprintf(stderr, "watcher_fun: Error setting watch at %s!\n", root_path);
+ 			}
+			else 
+            {
+                update_next_server(children_list);
+            }
+        }
+	}
+    free(children_list);
+}
 
 int tree_skel_init(char* my_ip)
 {
@@ -108,7 +167,7 @@ int tree_skel_init(char* my_ip)
     free(new_path);
     
     //Watch children & get children
-    struct String_vector* children_list = malloc(sizeof(struct String_vector)); 
+    zoo_string* children_list = malloc(sizeof(zoo_string)); 
 
     if(ZOK != zoo_wget_children(zh,"/chain",watcher_fun,"ZooKeeper Data Watcher",children_list)){
         perror("tree_skel_init - zoo_get_children");
