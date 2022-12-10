@@ -49,38 +49,62 @@ pthread_mutex_t op_proc_lock = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
 
+
 void update_next_server(zoo_string *children_list)
 {
-    char *previous_next_server = NULL;
-    memcpy(previous_next_server, next_node, sizeof(next_node));
-    // Next server
-    for (int i = 0; i < children_list->count; i++)
+    char *old_next_server = NULL;
+    if (next_node != NULL)
     {
-        if (next_node == NULL && memcmp(znode_id, children_list->data[i], sizeof(znode_id) != 0))
+        strcpy(old_next_server, next_node);
+    }
+    int changed = 0;
+    //server index
+    int i = 0;
+    while (strcmp(znode_id, children_list->data[i]) != 0)
+    {
+        i++;
+    }
+    //next server index
+    i++;
+    if (i < children_list->count)
+    {
+        if (next_node == NULL)
         {
-            memcpy(next_node, children_list->data[i], sizeof(children_list->data[i]));
+            strcpy(next_node, children_list->data[i]);
+            changed = 1;
         }
-        else if (next_node != NULL && memcmp(znode_id, children_list->data[i], sizeof(znode_id)) < 0 &&
-                 memcmp(children_list->data[i], next_node, sizeof(znode_id)) < 0)
+        else if (strcmp(next_node, children_list->data[i]) != 0) 
         {
-            memcpy(next_node, children_list->data[i], sizeof(children_list->data[i]));
+            strcpy(next_node, children_list->data[i]);
+            changed = 1;
         }
     }
-
-    if (next_node != NULL && memcmp(previous_next_server, next_node, sizeof(next_node)) != 0)
+    if (changed == 1)
     {
-        char next_node_path[32];
-        sprintf(next_node_path, "%s/%s", "/chain", next_node);
-        zoo_get(zh, next_node_path, 0, next_node_ip, sizeof(next_node_ip), NULL);
+        //Disconnect from old next server
+        if (old_next_server != NULL)
+        {
+            rtree_disconnect(next_server);
+        }
 
-        // * Connect with next server
-        memcpy(ip_port, next_node_ip, sizeof(next_node_ip));
+        char next_node_path[32];
+        sprintf(next_node_path, "%s/%s", root_path, next_node); 
+        if (ZOK != zoo_get(zh, next_node_path,0,next_node_ip,sizeof(next_node_ip), NULL))
+        {
+            fprintf(stderr, "update_next_server: Error getting data at '%s'.\n", next_node_path);
+            return;
+        }
+
+        //Connect with new next server
+        char *ip_port = NULL;
+        strcpy(ip_port,next_node_ip);
         char *token = strtok(ip_port, ":");
         token = strtok(NULL, ":");
-        // rtree_disconnect(next_server);
-        // rtree_connect(ip_port);
-        socket_next_Server = network_server_init(htons(atoi(token)));
+        int address = htons(atoi(token))
+        socket_next_Server = network_server_init(address);
+        rtree_connect(address);
         free(ip_port);
+        free(token);
     }
     free(previous_next_server);
 }
@@ -88,15 +112,6 @@ void update_next_server(zoo_string *children_list)
 static void watcher_fun(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx)
 {
     zoo_string *children_list = (zoo_string *)malloc(sizeof(zoo_string));
-    //! necessário?!
-    // int is_connected        // tornar atributo
-    // if (type == ZOO_SESSION_EVENT) {
-    //	if (state == ZOO_CONNECTED_STATE) {
-    //		is_connected = 1;
-    //	} else {
-    //		is_connected = 0;
-    //	}
-    // }
     if (state == ZOO_CONNECTED_STATE)
     {
         if (type == ZOO_CHILD_EVENT)
@@ -110,6 +125,10 @@ static void watcher_fun(zhandle_t *wzh, int type, int state, const char *zpath, 
                 update_next_server(children_list);
             }
         }
+    }
+    for (int i = 0; i < children_list->count; i++)
+    {
+        free(children_list->data[i]);
     }
     free(children_list);
 }
