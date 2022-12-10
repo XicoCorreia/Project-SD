@@ -18,20 +18,24 @@
 #include <unistd.h>
 #include <zookeeper/zookeeper.h>
 
-static const int TIMEOUT = 3000; // in ms
-static const char *root_path = "/chain";
-static char *w_context = "Head/Tail Server Watcher";
-static char *line;
-static struct rtree_t *head;
-static struct rtree_t *tail;
-static zhandle_t *zh;
+#define PATH_BUF_LEN 32
 
 typedef struct String_vector zoo_string;
 
-void update_server_list(zoo_string *children_list)
+static const int TIMEOUT = 3000; // in ms
+static const char *root_path = "/chain";
+static char *w_context = "Head/Tail Server Watcher";
+static zhandle_t *zh;
+
+static struct rtree_t *head;
+static struct rtree_t *tail;
+
+static char *line;
+
+void update_head_tail(zoo_string *children_list)
 {
-    int len = 32;
-    char address_port[len];
+    int len = PATH_BUF_LEN;
+    char address_port[PATH_BUF_LEN];
     char head_path[32];
     char head_host[32];
     char tail_path[32];
@@ -41,13 +45,14 @@ void update_server_list(zoo_string *children_list)
     sprintf(head_path, "%s/%s", root_path, children_list->data[0]);
     if (ZOK != zoo_get(zh, head_path, 0, address_port, &len, NULL))
     {
-        fprintf(stderr, "update_server_list: Error getting data at '%s'.\n", head_path);
+        fprintf(stderr, "update_head_tail: Error getting data at '%s'.\n", head_path);
         return;
     }
     if (len > 0 && strcmp(head_host, address_port) != 0)
     {
         rtree_disconnect(head); // ! verificar erros
         head = rtree_connect(address_port);
+        head->znode_id = strdup(head_host);
     }
 
     memset(address_port, 0, len);
@@ -56,30 +61,43 @@ void update_server_list(zoo_string *children_list)
     sprintf(tail_path, "%s/%s", root_path, children_list->data[children_list->count - 1]);
     if (ZOK != zoo_get(zh, tail_path, 0, address_port, &len, NULL))
     {
-        fprintf(stderr, "update_server_list: Error getting data at '%s'.\n", tail_path);
+        fprintf(stderr, "update_head_tail: Error getting data at '%s'.\n", tail_path);
         return;
     }
     if (len > 0 && strcmp(tail_host, address_port) != 0)
     {
         rtree_disconnect(tail); // ! verificar erros
-        tail = strcmp(address_port, head_host) == 0 ? head : rtree_connect(address_port);
+        if (strcmp(address_port, head_host) == 0)
+        {
+            tail = head;
+        }
+        else
+        {
+            tail = rtree_connect(address_port);
+            head->znode_id = strdup(head_host);
+        }
     }
 }
 
 static void child_watcher(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx)
 {
-    zoo_string *children_list = (zoo_string *)malloc(sizeof(zoo_string));
+    zoo_string *children_list = malloc(sizeof(zoo_string));
+    if (children_list == NULL)
+    {
+        perror("child_watcher");
+        exit(EXIT_FAILURE);
+    }
     if (state == ZOO_CONNECTED_STATE)
     {
         if (type == ZOO_CHILD_EVENT)
         {
-            if (ZOK != zoo_wget_children(zh, root_path, child_watcher, w_context, children_list))
+            if (ZOK != zoo_wget_children(zh, root_path, child_watcher, watcher_ctx, children_list))
             {
-                fprintf(stderr, "child_watcher: Error setting watch at '%s'.\n", root_path);
+                fprintf(stderr, "child_watcher: Error getting data at '%s'.\n", root_path);
             }
             else
             {
-                update_server_list(children_list);
+                update_head_tail(children_list);
             }
         }
     }
@@ -92,7 +110,6 @@ static void child_watcher(zhandle_t *wzh, int type, int state, const char *zpath
 
 int main(int argc, char const *argv[])
 {
-    head = tail;
     /* Testar os argumentos de entrada */
     if (argc != 2)
     {
@@ -108,7 +125,6 @@ int main(int argc, char const *argv[])
     }
 
     zh = zookeeper_init(argv[1], NULL, TIMEOUT, 0, NULL, 0);
-
     if (zh == NULL)
     {
         perror("main");
@@ -116,18 +132,7 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
 
-    zoo_string *children_list = (zoo_string *)malloc(sizeof(zoo_string));
-    if (ZOK != zoo_wget_children(zh, root_path, &child_watcher, w_context, children_list))
-    {
-        fprintf(stderr, "Error setting watch at %s!\n", root_path);
-    }
-    update_server_list(children_list);
-
-    for (int i = 0; i < children_list->count; i++)
-    {
-        free(children_list->data[i]);
-    }
-    free(children_list);
+    child_watcher(zh, ZOO_CHILD_EVENT, ZOO_CONNECTED_STATE, root_path, w_context);
 
     signal_sigint(tree_client_exit);
 

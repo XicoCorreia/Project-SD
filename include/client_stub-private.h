@@ -6,6 +6,7 @@
 
 struct rtree_t
 {
+    char *znode_id;
     u_int16_t port;
     char *address;
     int sockfd;

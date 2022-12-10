@@ -45,6 +45,7 @@ struct rtree_t *rtree_connect(const char *address_port)
 int rtree_disconnect(struct rtree_t *rtree)
 {
     int ret = network_close(rtree);
+    free(rtree->znode_id);
     free(rtree->address);
     free(rtree);
     return ret;

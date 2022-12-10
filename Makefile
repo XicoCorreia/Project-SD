@@ -12,7 +12,7 @@ LIB_DIR = lib
 
 CLIENT_OBJS = tree_client.o
 CLIENT_LIB_OBJS = data.o client_stub.o entry.o message.o network_client.o sdmessage.pb-c.o
-SERVER_OBJS = sdmessage.pb-c.o data.o entry.o message.o network_server.o tree_server.o tree_skel.o tree.o
+SERVER_OBJS = network_server.o tree_server.o tree_skel.o tree.o
 
 # -std deve ser gnu99 ou superior para usar strdup
 # em Ubuntu 22.04 (ambiente de labs), o gcc 11 usa -std=gnu++17
@@ -32,8 +32,8 @@ withtree:
 tree-client: client-lib.o $(CLIENT_OBJS)
 	$(CC) $(addprefix $(OBJ_DIR)/, $(CLIENT_OBJS)) $(LIB_DIR)/client-lib.o -o $(BIN_DIR)/$@ $(LIBS)
 
-tree-server: $(SERVER_OBJS)
-	$(CC) $(addprefix $(OBJ_DIR)/, $(SERVER_OBJS)) -o $(BIN_DIR)/$@ $(LIBS)
+tree-server: client-lib.o $(SERVER_OBJS)
+	$(CC) $(addprefix $(OBJ_DIR)/, $(SERVER_OBJS)) $(LIB_DIR)/client-lib.o -o $(BIN_DIR)/$@ $(LIBS)
 
 client-lib.o: $(CLIENT_LIB_OBJS)
 	ld -r $(addprefix $(OBJ_DIR)/, $(CLIENT_LIB_OBJS)) -o $(LIB_DIR)/$@
