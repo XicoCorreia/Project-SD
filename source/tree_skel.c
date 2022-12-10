@@ -49,7 +49,6 @@ pthread_mutex_t op_proc_lock = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
 
-
 void update_next_server(zoo_string *children_list)
 {
     char *old_next_server = NULL;
@@ -58,13 +57,13 @@ void update_next_server(zoo_string *children_list)
         strcpy(old_next_server, next_node);
     }
     int changed = 0;
-    //server index
+    // server index
     int i = 0;
     while (strcmp(znode_id, children_list->data[i]) != 0)
     {
         i++;
     }
-    //next server index
+    // next server index
     i++;
     if (i < children_list->count)
     {
@@ -73,7 +72,7 @@ void update_next_server(zoo_string *children_list)
             strcpy(next_node, children_list->data[i]);
             changed = 1;
         }
-        else if (strcmp(next_node, children_list->data[i]) != 0) 
+        else if (strcmp(next_node, children_list->data[i]) != 0)
         {
             strcpy(next_node, children_list->data[i]);
             changed = 1;
@@ -81,27 +80,26 @@ void update_next_server(zoo_string *children_list)
     }
     if (changed == 1)
     {
-        //Disconnect from old next server
+        // Disconnect from old next server
         if (old_next_server != NULL)
         {
             rtree_disconnect(next_server);
         }
 
         char next_node_path[32];
-        sprintf(next_node_path, "%s/%s", root_path, next_node); 
-        if (ZOK != zoo_get(zh, next_node_path,0,next_node_ip,sizeof(next_node_ip), NULL))
+        sprintf(next_node_path, "%s/%s", root_path, next_node);
+        if (ZOK != zoo_get(zh, next_node_path, 0, next_node_ip, sizeof(next_node_ip), NULL))
         {
             fprintf(stderr, "update_next_server: Error getting data at '%s'.\n", next_node_path);
             return;
         }
 
-        //Connect with new next server
+        // Connect with new next server
         char *ip_port = NULL;
-        strcpy(ip_port,next_node_ip);
+        strcpy(ip_port, next_node_ip);
         char *token = strtok(ip_port, ":");
         token = strtok(NULL, ":");
-        int address = htons(atoi(token))
-        socket_next_Server = network_server_init(address);
+        int address = htons(atoi(token)) socket_next_Server = network_server_init(address);
         rtree_connect(address);
         free(ip_port);
         free(token);
@@ -133,7 +131,7 @@ static void watcher_fun(zhandle_t *wzh, int type, int state, const char *zpath, 
     free(children_list);
 }
 
-int tree_skel_init(char *my_ip)
+int tree_skel_init(char *address_port)
 {
     num_threads = 1;
     tree = tree_create();
@@ -170,7 +168,7 @@ int tree_skel_init(char *my_ip)
         }
     }
     // * Ligar ao zookeeper
-    zh = zookeeper_init(my_ip, watcher_fun, 2000, 0, NULL, 0);
+    zh = zookeeper_init(address_port, watcher_fun, 2000, 0, NULL, 0);
     if (zh == NULL)
     {
         perror("tree_skel_init - zookeeper_init");
@@ -191,8 +189,8 @@ int tree_skel_init(char *my_ip)
     int new_path_len = 1024;
     char *new_path = malloc(new_path_len);
 
-    if (ZOK != zoo_create(zh, "/chain/node", my_ip, sizeof(my_ip), &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL | ZOO_SEQUENCE,
-                          new_path, new_path_len))
+    if (ZOK != zoo_create(zh, "/chain/node", address_port, sizeof(address_port), &ZOO_OPEN_ACL_UNSAFE,
+                          ZOO_EPHEMERAL | ZOO_SEQUENCE, new_path, new_path_len))
     {
         perror("tree_skel_init - zoo_create");
         exit(EXIT_FAILURE);
@@ -228,7 +226,7 @@ int tree_skel_init(char *my_ip)
     if (next_node != NULL)
     {
         char next_node_path[32];
-        next_node_ip = malloc(sizeof(my_ip));
+        next_node_ip = malloc(sizeof(address_port));
         sprintf(next_node_path, "%s/%s", "/chain", next_node);
         zoo_get(zh, next_node_path, 0, next_node_ip, sizeof(next_node_ip), NULL);
 
@@ -310,7 +308,6 @@ int invoke(MessageT *msg)
     case MESSAGE_T__OPCODE__OP_DEL: {
         char *key = (char *)msg->data.data;
         request_t *request = create_request(last_assigned, OP_DEL, key, NULL);
-        rtree_del(next_server, key);
         free(msg->data.data);
         if (request == NULL)
         {
@@ -371,9 +368,6 @@ int invoke(MessageT *msg)
         EntryT *entry = entry_t__unpack(NULL, msg->data.len, msg->data.data);
         struct data_t *data = data_create2(entry->value.len, entry->value.data);
         request_t *request = create_request(last_assigned, OP_PUT, entry->key, data);
-        struct entry_t *temp = entry_create(entry->key, data);
-        rtree_put(next_server, temp); // ! lidar com erros
-        free(temp);
         free(data);
         free(msg->data.data);
         entry_t__free_unpacked(entry, NULL);
@@ -535,6 +529,11 @@ void *process_request(void *params)
             {
                 printf("del: Chave '%s' não encontrada.\n", request->key);
             }
+            if ((rtree_del(next_server, request->key) == -1))
+            {
+                printf("del: Erro ao submeter operação '%d' no servidor seguinte (%s:%d).\n", request->op_n,
+                       next_server->address, next_server->port);
+            }
         }
         else if (request->op == OP_PUT)
         {
@@ -542,6 +541,13 @@ void *process_request(void *params)
             {
                 printf("put: Erro ao inserir a entrada com a chave '%s'.\n", request->key);
             }
+            struct entry_t *entry = entry_create(request->key, request->data);
+            if ((rtree_put(next_server, entry) == -1))
+            {
+                printf("put: Erro ao submeter operação '%d' no servidor seguinte (%s:%d).\n", request->op_n,
+                       next_server->address, next_server->port);
+            }
+            free(entry);
         }
         pthread_mutex_unlock(&tree_lock);
 
