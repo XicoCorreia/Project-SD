@@ -70,7 +70,7 @@ void update_head_tail(zoo_string *children_list)
         if (head == NULL)
         {
             head = rtree_connect(address_port);
-            head->znode_id = strdup(head_host);
+            head->znode_id = strdup(head_path);
         }
     }
 
@@ -92,7 +92,7 @@ void update_head_tail(zoo_string *children_list)
         if (tail == NULL)
         {
             tail = rtree_connect(address_port);
-            tail->znode_id = strdup(tail_host);
+            tail->znode_id = strdup(tail_path);
         }
     }
 }
@@ -403,6 +403,7 @@ void print_value(struct data_t *data)
 
 void tree_client_exit()
 {
+    zookeeper_close(zh);
     int status = 0;
     if (head != tail)
     {
