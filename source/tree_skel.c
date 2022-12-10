@@ -66,6 +66,7 @@ void update_next_server(zoo_string *children_list)
             memcpy(next_node, children_list->data[i], sizeof(children_list->data[i]));
         }
     }
+
     if (next_node != NULL && memcmp(previous_next_server, next_node, sizeof(next_node)) != 0)
     {
         char next_node_path[32];
@@ -290,6 +291,7 @@ int invoke(MessageT *msg)
     case MESSAGE_T__OPCODE__OP_DEL: {
         char *key = (char *)msg->data.data;
         request_t *request = create_request(last_assigned, OP_DEL, key, NULL);
+        rtree_del(next_server, key);
         free(msg->data.data);
         if (request == NULL)
         {
@@ -350,6 +352,9 @@ int invoke(MessageT *msg)
         EntryT *entry = entry_t__unpack(NULL, msg->data.len, msg->data.data);
         struct data_t *data = data_create2(entry->value.len, entry->value.data);
         request_t *request = create_request(last_assigned, OP_PUT, entry->key, data);
+        struct entry_t *temp = entry_create(entry->key, data);
+        rtree_put(next_server, temp); // ! lidar com erros
+        free(temp);
         free(data);
         free(msg->data.data);
         entry_t__free_unpacked(entry, NULL);
