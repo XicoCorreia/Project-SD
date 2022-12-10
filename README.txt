@@ -13,11 +13,12 @@ Compilar e executar
 No diretório de raíz do projeto, correr o seguinte:
 
 $ make
-$ tree-server <server>:<port>
-$ tree-client <server>:<port>
+$ tree-server <port> <zk_server>:<zk_port>
+$ tree-client <zk_server>:<zk_port>
 
-Onde server é o endereço IP ou nome do servidor de ZooKeeper e
-port é o número do porto TCP onde o servidor está à espera de ligações.
+Onde zk_server e zk_port são o endereço IP/nome e o porto TCP,
+respetivamente, do servidor de ZooKeeper, e port é o porto TCP
+onde o servidor escuta por ligações de clientes/servidores na cadeia.
 
 Alvos do Makefile:
 

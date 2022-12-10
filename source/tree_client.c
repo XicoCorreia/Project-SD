@@ -19,6 +19,7 @@
 #include <zookeeper/zookeeper.h>
 
 #define PATH_BUF_LEN 32
+#define ZOO_DATA_LEN 32
 
 typedef struct String_vector zoo_string;
 
@@ -34,47 +35,64 @@ static char *line;
 
 void update_head_tail(zoo_string *children_list)
 {
-    int len = PATH_BUF_LEN;
+    int buf_len = ZOO_DATA_LEN;
     char address_port[PATH_BUF_LEN];
-    char head_path[32];
-    char head_host[32];
-    char tail_path[32];
-    char tail_host[32];
+    char head_path[PATH_BUF_LEN];
+    char head_host[ZOO_DATA_LEN];
+    char tail_path[PATH_BUF_LEN];
+    char tail_host[ZOO_DATA_LEN];
 
-    sprintf(head_host, "%s:%d", head->address, head->port);
+    if (head != NULL)
+    {
+        sprintf(head_host, "%s:%d", head->address, head->port);
+    }
+
+    if (tail != NULL)
+    {
+        sprintf(tail_host, "%s:%d", tail->address, tail->port);
+    }
+
     sprintf(head_path, "%s/%s", root_path, children_list->data[0]);
-    if (ZOK != zoo_get(zh, head_path, 0, address_port, &len, NULL))
+    sprintf(tail_path, "%s/%s", root_path, children_list->data[children_list->count - 1]);
+
+    if (ZOK != zoo_get(zh, head_path, 0, address_port, &buf_len, NULL))
     {
         fprintf(stderr, "update_head_tail: Error getting data at '%s'.\n", head_path);
         return;
     }
-    if (len > 0 && strcmp(head_host, address_port) != 0)
+    if (address_port != NULL)
     {
-        rtree_disconnect(head); // ! verificar erros
-        head = rtree_connect(address_port);
-        head->znode_id = strdup(head_host);
+        if (head != NULL && strcmp(head->znode_id, head_path) != 0)
+        {
+            rtree_disconnect(head); // ! verificar erros
+            head = NULL;
+        }
+        if (head == NULL)
+        {
+            head = rtree_connect(address_port);
+            head->znode_id = strdup(head_host);
+        }
     }
 
-    memset(address_port, 0, len);
-    len = 32;
-    sprintf(tail_host, "%s:%d", tail->address, tail->port);
-    sprintf(tail_path, "%s/%s", root_path, children_list->data[children_list->count - 1]);
-    if (ZOK != zoo_get(zh, tail_path, 0, address_port, &len, NULL))
+    memset(address_port, 0, buf_len);
+    buf_len = ZOO_DATA_LEN;
+
+    if (ZOK != zoo_get(zh, tail_path, 0, address_port, &buf_len, NULL))
     {
         fprintf(stderr, "update_head_tail: Error getting data at '%s'.\n", tail_path);
         return;
     }
-    if (len > 0 && strcmp(tail_host, address_port) != 0)
+    if (address_port != NULL)
     {
-        rtree_disconnect(tail); // ! verificar erros
-        if (strcmp(address_port, head_host) == 0)
+        if (tail != NULL && strcmp(tail->znode_id, tail_path) != 0)
         {
-            tail = head;
+            rtree_disconnect(tail); // ! verificar erros
+            tail = NULL;
         }
-        else
+        if (tail == NULL)
         {
             tail = rtree_connect(address_port);
-            head->znode_id = strdup(head_host);
+            tail->znode_id = strdup(tail_host);
         }
     }
 }
@@ -113,8 +131,8 @@ int main(int argc, char const *argv[])
     /* Testar os argumentos de entrada */
     if (argc != 2)
     {
-        printf("Uso: ./tree-client <server:port>\n");
-        printf("Exemplo de uso: ./tree-client 127.0.0.1:12345\n");
+        printf("Uso: ./tree-client <zk_server>:<zk_port>\n");
+        printf("Exemplo de uso: ./tree-client 127.0.0.1:2181\n");
         exit(EXIT_FAILURE);
     }
     size_t line_size = 20; // valor inicial, cresce consoante o necessário

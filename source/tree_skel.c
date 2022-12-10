@@ -23,6 +23,7 @@
 typedef struct String_vector zoo_string;
 
 #define PATH_BUF_LEN 32
+#define ZOO_DATA_LEN 32
 
 static const int TIMEOUT = 3000; // in ms
 static const char *root_path = "/chain";
@@ -53,10 +54,10 @@ pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
 
 void update_next_server(zoo_string *children_list)
 {
-    int buf_len = 32;
+    int buf_len = ZOO_DATA_LEN;
     char *candidate_id = NULL;
-    char candidate_path[buf_len];
-    char address_port[buf_len];
+    char candidate_path[PATH_BUF_LEN];
+    char address_port[ZOO_DATA_LEN];
 
     if (candidate_path == NULL)
     {
@@ -73,9 +74,16 @@ void update_next_server(zoo_string *children_list)
         }
     }
 
-    if (candidate_id != NULL && strcmp(candidate_id, next_server->znode_id) != 0)
+    if (candidate_id != NULL)
     {
-        rtree_disconnect(next_server); // ! verificar erros
+        if (next_server != NULL)
+        {
+            if (strcmp(candidate_id, next_server->znode_id) == 0) // * next_server mantém-se
+                return;
+            else
+                rtree_disconnect(next_server); // ! verificar erros
+        }
+
         sprintf(candidate_path, "%s/%s", root_path, candidate_id);
         if (ZOK != zoo_get(zh, candidate_path, 0, address_port, &buf_len, NULL))
         {
@@ -123,7 +131,7 @@ static void child_watcher(zhandle_t *wzh, int type, int state, const char *zpath
     free(children_list);
 }
 
-int tree_skel_init(char *address_port)
+int tree_skel_init(const char *address_port)
 {
     tree = tree_create();
     if (tree == NULL)
@@ -155,7 +163,7 @@ int tree_skel_init(char *address_port)
         if (pthread_create(&thread[i], NULL, &process_request, (void *)&thread_param[i]) != 0)
         {
             perror("tree_skel_init");
-            exit(EXIT_FAILURE);
+            return -1;
         }
     }
     // * Ligar ao zookeeper
@@ -163,7 +171,7 @@ int tree_skel_init(char *address_port)
     if (zh == NULL)
     {
         perror("tree_skel_init - zookeeper_init");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     // * CRIAR /CHAIN
@@ -172,7 +180,7 @@ int tree_skel_init(char *address_port)
         if (ZOK != zoo_create(zh, root_path, NULL, 0, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0))
         {
             perror("tree_skel_init - zoo_create chain"); // ? usar perror só se errno ficar definido
-            exit(EXIT_FAILURE);
+            return -1;
         }
     }
 
@@ -181,7 +189,7 @@ int tree_skel_init(char *address_port)
                           ZOO_EPHEMERAL | ZOO_SEQUENCE, znode_id, PATH_BUF_LEN))
     {
         perror("tree_skel_init - zoo_create");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     child_watcher(zh, ZOO_CHILD_EVENT, ZOO_CONNECTED_STATE, root_path, w_context);
@@ -193,6 +201,9 @@ void tree_skel_destroy()
 {
     terminate = 1;
     pthread_cond_broadcast(&queue_cond);
+    zookeeper_close(zh);
+    rtree_disconnect(next_server);
+
     int *r;
     for (int i = 0; i < NUM_THREADS; i++)
     {
