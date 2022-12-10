@@ -62,7 +62,7 @@ void update_server_list(zoo_string *children_list)
     if (len > 0 && strcmp(tail_host, address_port) != 0)
     {
         rtree_disconnect(tail); // ! verificar erros
-        tail = rtree_connect(address_port);
+        tail = strcmp(address_port, head_host) == 0 ? head : rtree_connect(address_port);
     }
 }
 
@@ -82,6 +82,10 @@ static void child_watcher(zhandle_t *wzh, int type, int state, const char *zpath
                 update_server_list(children_list);
             }
         }
+    }
+    for (int i = 0; i < children_list->count; i++)
+    {
+        free(children_list->data[i]);
     }
     free(children_list);
 }
@@ -117,17 +121,13 @@ int main(int argc, char const *argv[])
     {
         fprintf(stderr, "Error setting watch at %s!\n", root_path);
     }
+    update_server_list(children_list);
 
-    getline(&line, &line_size, stdin);
-
-    getline(&line, &line_size, stdin);
-
-    tail = rtree_connect(argv[1]);
-    if (tail == NULL)
+    for (int i = 0; i < children_list->count; i++)
     {
-        free(line);
-        exit(EXIT_FAILURE);
+        free(children_list->data[i]);
     }
+    free(children_list);
 
     signal_sigint(tree_client_exit);
 
@@ -380,7 +380,12 @@ void print_value(struct data_t *data)
 
 void tree_client_exit()
 {
-    int status = rtree_disconnect(tail);
+    int status = 0;
+    if (head != tail)
+    {
+        status = rtree_disconnect(head);
+    }
+    status |= rtree_disconnect(tail);
     if (status != 0)
     {
         perror("tree_client");

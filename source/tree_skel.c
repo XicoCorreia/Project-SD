@@ -6,6 +6,8 @@
  *   Filipe Egipto - fc56272
  */
 #include "tree_skel.h"
+#include "client_stub-private.h"
+#include "client_stub.h"
 #include "entry.h"
 #include "op_status-private.h"
 #include "string.h"
@@ -34,6 +36,8 @@ char *znode_id;
 char *next_node;
 char *next_node_ip;
 int socket_next_Server;
+
+struct rtree_t *next_server;
 
 char *root_path = "/chain";
 typedef struct String_vector zoo_string;
@@ -72,6 +76,8 @@ void update_next_server(zoo_string *children_list)
         memcpy(ip_port, next_node_ip, sizeof(next_node_ip));
         char *token = strtok(ip_port, ":");
         token = strtok(NULL, ":");
+        // rtree_disconnect(next_server);
+        // rtree_connect(ip_port);
         socket_next_Server = network_server_init(htons(atoi(token)));
         free(ip_port);
     }
