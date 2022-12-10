@@ -30,9 +30,9 @@ pthread_t *thread;
 int *thread_param;
 
 zhandle_t *zh;
-char* znode_id;
-char* next_node;
-char* next_node_ip;
+char *znode_id;
+char *next_node;
+char *next_node_ip;
 int socket_next_Server;
 
 char *root_path = "/chain";
@@ -42,33 +42,34 @@ pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t op_proc_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t op_proc_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t tree_cond = PTHREAD_COND_INITIALIZER;
 
 void update_next_server(zoo_string *children_list)
 {
     char *previous_next_server = NULL;
     memcpy(previous_next_server, next_node, sizeof(next_node));
-    //Next server
+    // Next server
     for (int i = 0; i < children_list->count; i++)
     {
-        if(next_node == NULL && memcmp(znode_id,children_list->data[i],sizeof(znode_id) != 0)){
-            memcpy(next_node,children_list->data[i], sizeof(children_list->data[i]));
+        if (next_node == NULL && memcmp(znode_id, children_list->data[i], sizeof(znode_id) != 0))
+        {
+            memcpy(next_node, children_list->data[i], sizeof(children_list->data[i]));
         }
-        else if(next_node != NULL && memcmp(znode_id,children_list->data[i],sizeof(znode_id)) < 0 && 
-                                                    memcmp(children_list->data[i],next_node,sizeof(znode_id)) < 0){
-            memcpy(next_node,children_list->data[i], sizeof(children_list->data[i]));
+        else if (next_node != NULL && memcmp(znode_id, children_list->data[i], sizeof(znode_id)) < 0 &&
+                 memcmp(children_list->data[i], next_node, sizeof(znode_id)) < 0)
+        {
+            memcpy(next_node, children_list->data[i], sizeof(children_list->data[i]));
         }
     }
-    if(next_node != NULL && memcmp(previous_next_server, next_node, sizeof(next_node)) != 0){
+    if (next_node != NULL && memcmp(previous_next_server, next_node, sizeof(next_node)) != 0)
+    {
         char next_node_path[32];
-        sprintf(next_node_path, "%s/%s", "/chain",next_node); 
-        zoo_get(zh, next_node_path,0,next_node_ip,sizeof(next_node_ip), NULL);
+        sprintf(next_node_path, "%s/%s", "/chain", next_node);
+        zoo_get(zh, next_node_path, 0, next_node_ip, sizeof(next_node_ip), NULL);
 
         // * Connect with next server
-        memcpy(ip_port,next_node_ip,sizeof(next_node_ip));
+        memcpy(ip_port, next_node_ip, sizeof(next_node_ip));
         char *token = strtok(ip_port, ":");
         token = strtok(NULL, ":");
         socket_next_Server = network_server_init(htons(atoi(token)));
@@ -77,36 +78,36 @@ void update_next_server(zoo_string *children_list)
     free(previous_next_server);
 }
 
-static void watcher_fun(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx) 
+static void watcher_fun(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx)
 {
-    zoo_string* children_list = (zoo_string *) malloc(sizeof(zoo_string));
+    zoo_string *children_list = (zoo_string *)malloc(sizeof(zoo_string));
     //! necessário?!
-    //int is_connected        // tornar atributo
-    //if (type == ZOO_SESSION_EVENT) {
-	//	if (state == ZOO_CONNECTED_STATE) {
-	//		is_connected = 1; 
-	//	} else {
-	//		is_connected = 0; 
-	//	}
-    //}
-    if (state == ZOO_CONNECTED_STATE) 
+    // int is_connected        // tornar atributo
+    // if (type == ZOO_SESSION_EVENT) {
+    //	if (state == ZOO_CONNECTED_STATE) {
+    //		is_connected = 1;
+    //	} else {
+    //		is_connected = 0;
+    //	}
+    // }
+    if (state == ZOO_CONNECTED_STATE)
     {
-        if (type == ZOO_CHILD_EVENT) 
+        if (type == ZOO_CHILD_EVENT)
         {
- 			if (ZOK != zoo_wget_children(zh, root_path, watcher_fun, watcher_ctx, children_list)) 
+            if (ZOK != zoo_wget_children(zh, root_path, watcher_fun, watcher_ctx, children_list))
             {
- 				fprintf(stderr, "watcher_fun: Error setting watch at %s!\n", root_path);
- 			}
-			else 
+                fprintf(stderr, "watcher_fun: Error setting watch at %s!\n", root_path);
+            }
+            else
             {
                 update_next_server(children_list);
             }
         }
-	}
+    }
     free(children_list);
 }
 
-int tree_skel_init(char* my_ip)
+int tree_skel_init(char *my_ip)
 {
     num_threads = 1;
     tree = tree_create();
@@ -143,15 +144,18 @@ int tree_skel_init(char* my_ip)
         }
     }
     // * Ligar ao zookeeper
-    zh = zookeeper_init(my_ip,watcher_fun,2000,0,NULL,0);
-    if(zh == NULL){
+    zh = zookeeper_init(my_ip, watcher_fun, 2000, 0, NULL, 0);
+    if (zh == NULL)
+    {
         perror("tree_skel_init - zookeeper_init");
         exit(EXIT_FAILURE);
     }
 
     // * CRIAR /CHAIN
-    if( ZNONODE == zoo_exists(zh, "/chain",0,NULL)){
-        if( ZOK != zoo_create(zh,"/chain", NULL,0,& ZOO_OPEN_ACL_UNSAFE, 0,NULL, 0)) {
+    if (ZNONODE == zoo_exists(zh, "/chain", 0, NULL))
+    {
+        if (ZOK != zoo_create(zh, "/chain", NULL, 0, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0))
+        {
             perror("tree_skel_init - zoo_create chain");
             exit(EXIT_FAILURE);
         }
@@ -159,47 +163,52 @@ int tree_skel_init(char* my_ip)
 
     // * Criar znode
     int new_path_len = 1024;
-    char* new_path = malloc (new_path_len);
+    char *new_path = malloc(new_path_len);
 
-    if( ZOK != zoo_create(zh,"/chain/node",my_ip,sizeof(my_ip),& ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL | ZOO_SEQUENCE,new_path, new_path_len)) {
+    if (ZOK != zoo_create(zh, "/chain/node", my_ip, sizeof(my_ip), &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL | ZOO_SEQUENCE,
+                          new_path, new_path_len))
+    {
         perror("tree_skel_init - zoo_create");
         exit(EXIT_FAILURE);
     }
     // ID atribuido pelo zookeeper
-    memcpy(znode_id, &new_path[4],10);
+    memcpy(znode_id, &new_path[4], 10);
     free(new_path);
-    
-    //Watch children & get children
-    zoo_string* children_list = malloc(sizeof(zoo_string)); 
 
-    if(ZOK != zoo_wget_children(zh,"/chain",watcher_fun,"ZooKeeper Data Watcher",children_list)){
+    // Watch children & get children
+    zoo_string *children_list = malloc(sizeof(zoo_string));
+
+    if (ZOK != zoo_wget_children(zh, "/chain", watcher_fun, "ZooKeeper Data Watcher", children_list))
+    {
         perror("tree_skel_init - zoo_get_children");
         exit(EXIT_FAILURE);
     }
 
-    //Next server
+    // Next server
     next_node = NULL;
     for (int i = 0; i < children_list->count; i++)
     {
-        if(next_node == NULL && memcmp(znode_id,children_list->data[i],sizeof(znode_id) != 0)){
-            memcpy(next_node,children_list->data[i], sizeof(children_list->data[i]));
+        if (next_node == NULL && memcmp(znode_id, children_list->data[i], sizeof(znode_id) != 0))
+        {
+            memcpy(next_node, children_list->data[i], sizeof(children_list->data[i]));
         }
-        else if(next_node != NULL && memcmp(znode_id,children_list->data[i],sizeof(znode_id)) < 0 && 
-                                                    memcmp(children_list->data[i],next_node,sizeof(znode_id)) < 0){
-            memcpy(next_node,children_list->data[i], sizeof(children_list->data[i]));
+        else if (next_node != NULL && memcmp(znode_id, children_list->data[i], sizeof(znode_id)) < 0 &&
+                 memcmp(children_list->data[i], next_node, sizeof(znode_id)) < 0)
+        {
+            memcpy(next_node, children_list->data[i], sizeof(children_list->data[i]));
         }
-
     }
     free(children_list);
-    if(next_node != NULL){
+    if (next_node != NULL)
+    {
         char next_node_path[32];
         next_node_ip = malloc(sizeof(my_ip));
-        sprintf(next_node_path, "%s/%s", "/chain",next_node); 
-        zoo_get(zh, next_node_path,0,next_node_ip,sizeof(next_node_ip), NULL);
+        sprintf(next_node_path, "%s/%s", "/chain", next_node);
+        zoo_get(zh, next_node_path, 0, next_node_ip, sizeof(next_node_ip), NULL);
 
         // * Connect with next server
-        char *ip_port= malloc(sizeof(next_node_ip));
-        memcpy(ip_port,next_node_ip,sizeof(next_node_ip));
+        char *ip_port = malloc(sizeof(next_node_ip));
+        memcpy(ip_port, next_node_ip, sizeof(next_node_ip));
         char *token = strtok(ip_port, ":");
         token = strtok(NULL, ":");
         socket_next_Server = network_server_init(htons(atoi(token)));
@@ -469,7 +478,6 @@ int verify(int op_n)
             }
         }
     }
-    pthread_cond_signal(&op_proc_cond);
     pthread_mutex_unlock(&op_proc_lock);
     return status;
 }
@@ -485,6 +493,10 @@ void *process_request(void *params)
         {
             break;
         }
+        pthread_mutex_lock(&op_proc_lock);
+        op_proc.in_progress[tid] = request->op_n;
+        pthread_mutex_unlock(&op_proc_lock);
+
         printf("Thread #%d: pedido %d recebido.\n", tid, request->op_n);
         pthread_mutex_lock(&tree_lock);
         if (request->op == OP_DEL)
@@ -501,7 +513,6 @@ void *process_request(void *params)
                 printf("put: Erro ao inserir a entrada com a chave '%s'.\n", request->key);
             }
         }
-        pthread_cond_signal(&tree_cond);
         pthread_mutex_unlock(&tree_lock);
 
         pthread_mutex_lock(&op_proc_lock);
@@ -510,7 +521,6 @@ void *process_request(void *params)
             op_proc.max_proc = request->op_n;
         }
         op_proc.in_progress[tid] = 0;
-        pthread_cond_signal(&op_proc_cond);
         pthread_mutex_unlock(&op_proc_lock);
 
         free(request->key);
