@@ -465,7 +465,7 @@ void *process_request(void *params)
             {
                 printf("del: Chave '%s' não encontrada.\n", request->key);
             }
-            if ((rtree_del(next_server, request->key) == -1))
+            if (next_server != NULL && (rtree_del(next_server, request->key) == -1))
             {
                 printf("del: Erro ao submeter operação '%d' no servidor seguinte (%s:%d).\n", request->op_n,
                        next_server->address, next_server->port);
@@ -478,7 +478,7 @@ void *process_request(void *params)
                 printf("put: Erro ao inserir a entrada com a chave '%s'.\n", request->key);
             }
             struct entry_t *entry = entry_create(request->key, request->data);
-            if ((rtree_put(next_server, entry) == -1))
+            if (next_server != NULL && (rtree_put(next_server, entry) == -1))
             {
                 printf("put: Erro ao submeter operação '%d' no servidor seguinte (%s:%d).\n", request->op_n,
                        next_server->address, next_server->port);
