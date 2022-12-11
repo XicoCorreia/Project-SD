@@ -49,6 +49,14 @@ int network_connect(struct rtree_t *rtree)
     server.sin_family = AF_INET;
     server.sin_port = htons(rtree->port);
 
+    struct timeval timeout = {.tv_sec = 3}; // ! timeout de 3 segundos
+    if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
+    {
+        perror(error_msg);
+        close(sockfd);
+        return -1;
+    }
+
     // Estabelece conexão com o servidor definido em server
     if (connect(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)
     {

@@ -20,6 +20,7 @@
 
 #define PATH_BUF_LEN 32
 #define ZOO_DATA_LEN 32
+#define OP_MAX_ATTEMPTS 3
 
 typedef struct String_vector zoo_string;
 
@@ -36,6 +37,17 @@ static char *line;
 int compare_fn(const void *a, const void *b)
 {
     return strcmp(*(const char **)a, *(const char **)b);
+}
+
+int tail_verify(int op_n)
+{
+    for (int i = 1; i < 4; i++)
+    {
+        if (rtree_verify(tail, op_n) == 0)
+            return 0;
+        usleep(i * 250000); // espera i * 250ms
+    }
+    return -1;
 }
 
 void update_head_tail(zoo_string *children_list)
@@ -236,14 +248,21 @@ int main(int argc, char const *argv[])
             struct data_t *data = data_create2(strlen(value) + 1, value);
             struct entry_t *entry = entry_create(key, data);
 
-            int i = rtree_put(head, entry);
-            if (i == -1)
+            int op_n = rtree_put(head, entry);
+            if (op_n == -1)
             {
                 printf("Erro no comando 'put'.\n");
             }
             else
             {
-                printf("'%d': id da operacão 'put' para a entrada '%s'\n", i, entry->key);
+                printf("'%d': id da operacão 'put' para a entrada '%s'\n", op_n, entry->key);
+            }
+            for (int i = 1; i <= OP_MAX_ATTEMPTS; i++)
+            {
+                if (tail_verify(op_n) == 0)
+                    break;
+                printf("'%d': operação não se verificou na tail (tentativa %d/%d)\n", op_n, i, OP_MAX_ATTEMPTS);
+                op_n = rtree_put(head, entry);
             }
             entry_destroy(entry);
         }
@@ -282,14 +301,21 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
-            int i = rtree_del(head, key);
-            if (i == -1)
+            int op_n = rtree_del(head, key);
+            if (op_n == -1)
             {
                 printf("'%s': entrada inexistente\n", key);
             }
             else
             {
-                printf("'%d': id da operacão 'del' para a entrada '%s'\n", i, key);
+                printf("'%d': id da operacão 'del' para a entrada '%s'\n", op_n, key);
+            }
+            for (int i = 1; i <= OP_MAX_ATTEMPTS; i++)
+            {
+                if (tail_verify(op_n) == 0)
+                    break;
+                printf("'%d': operação não se verificou na tail (tentativa %d/%d)\n", op_n, i, OP_MAX_ATTEMPTS);
+                op_n = rtree_del(head, key);
             }
         }
         else if (strcmp(token, "verify") == 0)
