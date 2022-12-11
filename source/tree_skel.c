@@ -602,11 +602,11 @@ char *get_if_addr(char **allowed_ifs, int n_ifs)
 
 int tree_skel_zookeeper_init(const char *zk_address_port, short port)
 {
-    char *allowed_ifs[] = {"eth0", "enp0s3"};
+    char *allowed_ifs[] = {"eth0", "enp0s3", "wlo1", "wlan0"};
     int n_ifs = sizeof(allowed_ifs) / sizeof(char *);
     char address_port[ZOO_DATA_LEN];
     char *address = get_if_addr(allowed_ifs, n_ifs);
-    sprintf(address_port, "%s:%d", address, port);
+    sprintf(address_port, "%s:%hu", address, port);
     free(address);
 
     // * Ligar ao zookeeper
@@ -617,7 +617,11 @@ int tree_skel_zookeeper_init(const char *zk_address_port, short port)
         return -1;
     }
 
-    printf("Ligação estabelecida com o servidor ZooKeeper@%s\n", zk_address_port);
+    usleep(100000);
+    if (zoo_state(zh) == ZOO_CONNECTED_STATE)
+    {
+        printf("Ligação estabelecida com o servidor ZooKeeper@%s\n", zk_address_port);
+    }
 
     // * CRIAR /CHAIN
     if (ZNONODE == zoo_exists(zh, root_path, 0, NULL))
