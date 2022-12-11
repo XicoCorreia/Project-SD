@@ -24,8 +24,8 @@
 typedef struct String_vector zoo_string;
 
 static const int TIMEOUT = 3000; // in ms
-static const char *root_path = "/chain";
-static char *w_context = "Head/Tail Server Watcher";
+static const char root_path[] = "/chain";
+static char w_context[] = "Head/Tail Server Watcher";
 static zhandle_t *zh;
 
 static struct rtree_t *head;
@@ -35,6 +35,10 @@ static char *line;
 
 void update_head_tail(zoo_string *children_list)
 {
+    if (children_list->count == 0)
+    {
+        return; // ! Sem servidores mas "/chain" existe
+    }
     int buf_len = ZOO_DATA_LEN;
     char address_port[PATH_BUF_LEN];
     char head_path[PATH_BUF_LEN];
@@ -149,6 +153,8 @@ int main(int argc, char const *argv[])
         free(line);
         exit(EXIT_FAILURE);
     }
+
+    printf("Ligação estabelecida com o servidor ZooKeeper@%s\n", argv[1]);
 
     child_watcher(zh, ZOO_CHILD_EVENT, ZOO_CONNECTED_STATE, root_path, w_context);
 
@@ -405,6 +411,11 @@ void tree_client_exit()
 {
     zookeeper_close(zh);
     int status = 0;
+    if (head == NULL)
+    {
+        free(line);
+        exit(status);
+    }
     if (head != tail)
     {
         status = rtree_disconnect(head);

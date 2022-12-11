@@ -28,9 +28,9 @@ typedef struct String_vector zoo_string;
 #define ZOO_DATA_LEN 32
 
 static const int TIMEOUT = 3000; // in ms
-static const char *root_path = "/chain";
-static const char *znode_prefix = "/chain/node";
-static char *w_context = "Next Server Watcher";
+static const char root_path[] = "/chain";
+static const char znode_prefix[] = "/chain/node";
+static char w_context[] = "Next Server Watcher";
 static zhandle_t *zh = NULL;
 
 static char znode_id[PATH_BUF_LEN];
@@ -177,7 +177,10 @@ void tree_skel_destroy()
     terminate = 1;
     pthread_cond_broadcast(&queue_cond);
     zookeeper_close(zh);
-    rtree_disconnect(next_server);
+    if (next_server != NULL)
+    {
+        rtree_disconnect(next_server);
+    }
 
     int *r;
     for (int i = 0; i < num_threads; i++)
@@ -608,6 +611,8 @@ int tree_skel_zookeeper_init(const char *zk_address_port, short port)
         return -1;
     }
 
+    printf("Ligação estabelecida com o servidor ZooKeeper@%s\n", zk_address_port);
+
     // * CRIAR /CHAIN
     if (ZNONODE == zoo_exists(zh, root_path, 0, NULL))
     {
@@ -618,13 +623,15 @@ int tree_skel_zookeeper_init(const char *zk_address_port, short port)
         }
     }
 
+    char path_buffer[PATH_BUF_LEN];
     // * Criar znode
     if (ZOK != zoo_create(zh, znode_prefix, address_port, strlen(address_port) + 1, &ZOO_OPEN_ACL_UNSAFE,
-                          ZOO_EPHEMERAL | ZOO_SEQUENCE, znode_id, PATH_BUF_LEN))
+                          ZOO_EPHEMERAL | ZOO_SEQUENCE, path_buffer, PATH_BUF_LEN))
     {
         perror("tree_skel_zookeeper_init");
         return -1;
     }
+    strcpy(znode_id, path_buffer + sizeof(root_path)); // * Omite-se o prefixo /chain
     child_watcher(zh, ZOO_CHILD_EVENT, ZOO_CONNECTED_STATE, root_path, w_context);
 
     return 0;
