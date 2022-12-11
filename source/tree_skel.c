@@ -607,7 +607,7 @@ int tree_skel_zookeeper_init(const char *zk_address_port, short port)
     int n_ifs = sizeof(allowed_ifs) / sizeof(char *);
     char address_port[ZOO_DATA_LEN];
     char *address = get_if_addr(allowed_ifs, n_ifs);
-    sprintf(address_port, "%s:%d", address, port);
+    sprintf(address_port, "%s:%hu", address, port);
     free(address);
 
     // * Ligar ao zookeeper
