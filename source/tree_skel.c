@@ -99,6 +99,7 @@ void update_next_server(zoo_string *children_list)
         }
         else
         {
+            usleep(500000);
             next_server = rtree_connect(address_port);
             next_server->znode_id = strdup(candidate_id);
         }
