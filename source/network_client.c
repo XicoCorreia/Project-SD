@@ -11,16 +11,19 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <signal.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+static const int TIMEOUT = 3; // Timeout em segundos para ligação ao servidor
+
 int network_connect(struct rtree_t *rtree)
 {
-    int sockfd;
+    int status = -1;
+    int sockfd = -1;
     struct sockaddr_in server;
     char error_msg[64];
     sprintf(error_msg, "network_connect@%s:%d", rtree->address, rtree->port);
@@ -49,29 +52,27 @@ int network_connect(struct rtree_t *rtree)
     server.sin_family = AF_INET;
     server.sin_port = htons(rtree->port);
 
-    struct timeval timeout = {.tv_sec = 3}; // ! timeout de 3 segundos
-    if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
-    {
-        perror(error_msg);
-        close(sockfd);
-        return -1;
-    }
-
     // Estabelece conexão com o servidor definido em server
-    if (connect(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)
+    connect(sockfd, (struct sockaddr *)&server, sizeof(server));
+
+    struct pollfd desc_set[1];
+    desc_set[0].fd = sockfd;
+    desc_set[0].events = POLLIN;
+
+    // Timeout para estabelecer ligação com servidor (sobretudo servidor -> servidor)
+    for (int i = 0; i < TIMEOUT * 10; i++)
     {
-        perror(error_msg);
-        freeaddrinfo(res);
-        close(sockfd);
-        return -1;
+        if (poll(desc_set, 1, 100) == 0)
+        {
+            printf("Ligação estabelecida com o servidor '%s:%d'\n", rtree->address, rtree->port);
+            status = 0;
+            break;
+        }
     }
-
-    printf("Ligação estabelecida com o servidor '%s:%d'\n", rtree->address, rtree->port);
-
     signal_sigpipe(NULL);
     freeaddrinfo(res);
     rtree->sockfd = sockfd;
-    return 0;
+    return status;
 }
 
 MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
@@ -141,12 +142,7 @@ MessageT *network_send_receive(struct rtree_t *rtree, MessageT *msg)
  */
 int network_close(struct rtree_t *rtree)
 {
-    // Sinalizamos ao servidor que pretendemos encerrar a ligação
-    int len = 0;
-    if (write_all(rtree->sockfd, &len, sizeof(int)) < 0)
-    {
-        perror("network-close");
-    }
+
     if (close(rtree->sockfd) < 0)
     {
         perror("network_close");
