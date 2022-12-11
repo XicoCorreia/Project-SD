@@ -35,7 +35,7 @@ typedef struct _op_proc_t
  * pedidos de escrita na árvore.
  * Retorna 0 (OK) ou -1 (erro, por exemplo OUT OF MEMORY)
  */
-int tree_skel_init(const char *address_port);
+int tree_skel_init(int N);
 
 /* Liberta toda a memória e recursos alocados pela função tree_skel_init.
  */

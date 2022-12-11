@@ -13,6 +13,8 @@
 #include "string.h"
 #include "tree.h"
 #include "tree_skel-private.h"
+#include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +31,7 @@ static const int TIMEOUT = 3000; // in ms
 static const char *root_path = "/chain";
 static const char *znode_prefix = "/chain/node";
 static char *w_context = "Next Server Watcher";
-static zhandle_t *zh;
+static zhandle_t *zh = NULL;
 
 static char znode_id[PATH_BUF_LEN];
 static struct rtree_t *next_server;
@@ -41,7 +43,7 @@ request_t *queue_head;
 int last_assigned = 1;
 op_proc_t op_proc;
 
-int NUM_THREADS;
+int num_threads;
 pthread_t *thread;
 int *thread_param;
 
@@ -131,33 +133,34 @@ static void child_watcher(zhandle_t *wzh, int type, int state, const char *zpath
     free(children_list);
 }
 
-int tree_skel_init(const char *address_port)
+int tree_skel_init(int N)
 {
+    num_threads = N;
     tree = tree_create();
     if (tree == NULL)
     {
         return -1;
     }
     op_proc.max_proc = 0;                                   // default pois op_n >= 1
-    op_proc.in_progress = calloc(sizeof(int), NUM_THREADS); // max N threads a concorrer
+    op_proc.in_progress = calloc(sizeof(int), num_threads); // max N threads a concorrer
     if (op_proc.in_progress == NULL)
     {
         perror("tree_skel_init");
         return -1;
     }
-    thread = malloc(sizeof(pthread_t) * NUM_THREADS);
+    thread = malloc(sizeof(pthread_t) * num_threads);
     if (thread == NULL)
     {
         perror("tree_skel_init");
         return -1;
     }
-    thread_param = malloc(sizeof(int) * NUM_THREADS);
+    thread_param = malloc(sizeof(int) * num_threads);
     if (thread_param == NULL)
     {
         perror("tree_skel_init");
         return -1;
     }
-    for (int i = 0; i < NUM_THREADS; i++)
+    for (int i = 0; i < num_threads; i++)
     {
         thread_param[i] = i; // para aceder a op_proc.in_progress[i]
         if (pthread_create(&thread[i], NULL, &process_request, (void *)&thread_param[i]) != 0)
@@ -166,34 +169,6 @@ int tree_skel_init(const char *address_port)
             return -1;
         }
     }
-    // * Ligar ao zookeeper
-    zh = zookeeper_init(address_port, NULL, TIMEOUT, 0, NULL, 0);
-    if (zh == NULL)
-    {
-        perror("tree_skel_init - zookeeper_init");
-        return -1;
-    }
-
-    // * CRIAR /CHAIN
-    if (ZNONODE == zoo_exists(zh, root_path, 0, NULL))
-    {
-        if (ZOK != zoo_create(zh, root_path, NULL, 0, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0))
-        {
-            perror("tree_skel_init - zoo_create chain"); // ? usar perror só se errno ficar definido
-            return -1;
-        }
-    }
-
-    // * Criar znode
-    if (ZOK != zoo_create(zh, znode_prefix, address_port, strlen(address_port) + 1, &ZOO_OPEN_ACL_UNSAFE,
-                          ZOO_EPHEMERAL | ZOO_SEQUENCE, znode_id, PATH_BUF_LEN))
-    {
-        perror("tree_skel_init - zoo_create");
-        return -1;
-    }
-
-    child_watcher(zh, ZOO_CHILD_EVENT, ZOO_CONNECTED_STATE, root_path, w_context);
-
     return 0;
 }
 
@@ -205,7 +180,7 @@ void tree_skel_destroy()
     rtree_disconnect(next_server);
 
     int *r;
-    for (int i = 0; i < NUM_THREADS; i++)
+    for (int i = 0; i < num_threads; i++)
     {
         if (pthread_join(thread[i], (void **)&r) != 0)
         {
@@ -451,7 +426,7 @@ int verify(int op_n)
     }
     else
     {
-        for (int i = 0; i < NUM_THREADS; i++)
+        for (int i = 0; i < num_threads; i++)
         {
             if (op_proc.in_progress[i] == op_n)
             {
@@ -584,4 +559,73 @@ request_t *create_request(int op_n, int op, char *key, struct data_t *data)
     request->op_n = op_n;
     request->op = op;
     return request;
+}
+
+char *get_if_addr(char **allowed_ifs, int n_ifs)
+{
+    struct ifaddrs *addrs;
+    struct ifaddrs *temp;
+    char *address;
+    getifaddrs(&addrs);
+    temp = addrs;
+
+    while (temp != NULL)
+    {
+        if (temp->ifa_addr && temp->ifa_addr->sa_family == AF_INET)
+        {
+            for (int i = 0; i < n_ifs; i++)
+            {
+                if (strcmp(temp->ifa_name, allowed_ifs[i]) == 0)
+                {
+                    address = strdup(inet_ntoa(((struct sockaddr_in *)temp->ifa_addr)->sin_addr));
+                    freeifaddrs(addrs);
+                    return address;
+                }
+            }
+        }
+
+        temp = temp->ifa_next;
+    }
+
+    freeifaddrs(addrs);
+    return NULL;
+}
+
+int tree_skel_zookeeper_init(const char *zk_address_port, short port)
+{
+    char *allowed_ifs[] = {"eth0", "enp0s3"};
+    int n_ifs = sizeof(allowed_ifs) / sizeof(char *);
+    char address_port[ZOO_DATA_LEN];
+    char *address = get_if_addr(allowed_ifs, n_ifs);
+    sprintf(address_port, "%s:%d", address, port);
+    free(address);
+
+    // * Ligar ao zookeeper
+    zh = zookeeper_init(zk_address_port, NULL, TIMEOUT, 0, NULL, 0);
+    if (zh == NULL)
+    {
+        perror("tree_skel_zookeeper_init");
+        return -1;
+    }
+
+    // * CRIAR /CHAIN
+    if (ZNONODE == zoo_exists(zh, root_path, 0, NULL))
+    {
+        if (ZOK != zoo_create(zh, root_path, NULL, 0, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0))
+        {
+            perror("tree_skel_zookeeper_init"); // ? usar perror só se errno ficar definido
+            return -1;
+        }
+    }
+
+    // * Criar znode
+    if (ZOK != zoo_create(zh, znode_prefix, address_port, strlen(address_port) + 1, &ZOO_OPEN_ACL_UNSAFE,
+                          ZOO_EPHEMERAL | ZOO_SEQUENCE, znode_id, PATH_BUF_LEN))
+    {
+        perror("tree_skel_zookeeper_init");
+        return -1;
+    }
+    child_watcher(zh, ZOO_CHILD_EVENT, ZOO_CONNECTED_STATE, root_path, w_context);
+
+    return 0;
 }

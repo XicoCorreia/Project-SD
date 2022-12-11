@@ -6,12 +6,14 @@
  *   Filipe Egipto - fc56272
  */
 #include "network_server.h"
+#include "tree_skel-private.h"
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, char const *argv[])
 {
+    int result = 0;
     /* Testar os argumentos de entrada */
     if (argc != 3)
     {
@@ -20,18 +22,25 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
     /* inicialização da camada de rede */
-    int socket_de_escuta = network_server_init(htons(atoi(argv[1])));
+
+    uint16_t port = atoi(argv[1]);
+    int socket_de_escuta = network_server_init(htons(port));
+
     if (socket_de_escuta == -1)
     {
         return -1;
     }
 
-    if (tree_skel_init(argv[2]) == -1)
+    if (tree_skel_init(1) == -1) // uma thread secundária
     {
         return network_server_close();
     }
 
-    int result = network_main_loop(socket_de_escuta);
+    if (tree_skel_zookeeper_init(argv[2], port) == 0)
+    {
+        result = network_main_loop(socket_de_escuta);
+    }
+
     result |= network_server_close();
     tree_skel_destroy();
     return result;
