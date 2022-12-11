@@ -77,7 +77,7 @@ void update_next_server(zoo_string *children_list)
     {
         if (strcmp(children_list->data[i], znode_id) > 0)
         {
-            candidate_id = children_list->data[i]; 
+            candidate_id = children_list->data[i];
             break;
         }
     }
@@ -86,10 +86,10 @@ void update_next_server(zoo_string *children_list)
     {
         if (next_server != NULL)
         {
-            if (strcmp(candidate_id, next_server->znode_id) == 0) //next_server mantém-se
+            if (strcmp(candidate_id, next_server->znode_id) == 0) // next_server mantém-se
                 return;
             else
-                rtree_disconnect(next_server); 
+                rtree_disconnect(next_server);
         }
 
         sprintf(candidate_path, "%s/%s", root_path, candidate_id);
@@ -105,7 +105,7 @@ void update_next_server(zoo_string *children_list)
     }
     else if (next_server != NULL) // este server passa a ser TAIL
     {
-        rtree_disconnect(next_server); 
+        rtree_disconnect(next_server);
         next_server = NULL;
     }
 }
@@ -602,7 +602,7 @@ char *get_if_addr(char **allowed_ifs, int n_ifs)
 
 int tree_skel_zookeeper_init(const char *zk_address_port, short port)
 {
-    char *allowed_ifs[] = {"eth0", "enp0s3"};
+    char *allowed_ifs[] = {"eth0", "enp0s3", "wlo1", "wlan0"};
     int n_ifs = sizeof(allowed_ifs) / sizeof(char *);
     char address_port[ZOO_DATA_LEN];
     char *address = get_if_addr(allowed_ifs, n_ifs);
