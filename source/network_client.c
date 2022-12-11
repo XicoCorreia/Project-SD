@@ -22,11 +22,13 @@ int network_connect(struct rtree_t *rtree)
 {
     int sockfd;
     struct sockaddr_in server;
+    char error_msg[64];
+    sprintf(error_msg, "network_connect@%s:%d", rtree->address, rtree->port);
 
     // Cria socket TCP
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        perror("network_connect");
+        perror(error_msg);
         return -1;
     }
 
@@ -36,7 +38,7 @@ int network_connect(struct rtree_t *rtree)
     hints.ai_socktype = SOCK_STREAM;
     if (getaddrinfo(rtree->address, NULL, &hints, &res) != 0)
     {
-        perror("network_connect");
+        perror(error_msg);
         close(sockfd);
         return -1;
     }
@@ -50,7 +52,7 @@ int network_connect(struct rtree_t *rtree)
     // Estabelece conexão com o servidor definido em server
     if (connect(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)
     {
-        perror("network_connect");
+        perror(error_msg);
         freeaddrinfo(res);
         close(sockfd);
         return -1;
