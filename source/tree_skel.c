@@ -54,6 +54,11 @@ pthread_mutex_t op_proc_lock = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
 
+int compare_fn(const void *a, const void *b)
+{
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
 void update_next_server(zoo_string *children_list)
 {
     int buf_len = ZOO_DATA_LEN;
@@ -66,6 +71,7 @@ void update_next_server(zoo_string *children_list)
         perror("update_next_server");
         return;
     }
+    qsort(children_list->data, children_list->count, sizeof(char *), compare_fn);
 
     for (int i = 0; i < children_list->count; i++)
     {

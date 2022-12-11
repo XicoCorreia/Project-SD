@@ -33,6 +33,11 @@ static struct rtree_t *tail;
 
 static char *line;
 
+int compare_fn(const void *a, const void *b)
+{
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
 void update_head_tail(zoo_string *children_list)
 {
     if (children_list->count == 0)
@@ -45,6 +50,8 @@ void update_head_tail(zoo_string *children_list)
     char head_host[ZOO_DATA_LEN];
     char tail_path[PATH_BUF_LEN];
     char tail_host[ZOO_DATA_LEN];
+
+    qsort(children_list->data, children_list->count, sizeof(char *), compare_fn);
 
     if (head != NULL)
     {
@@ -160,25 +167,28 @@ int main(int argc, char const *argv[])
 
     signal_sigint(tree_client_exit);
 
-    struct pollfd desc_set[2];
+    struct pollfd desc_set[3];
     struct pollfd *stdin_desc = &desc_set[0];
-    struct pollfd *rtree_desc = &desc_set[1];
+    struct pollfd *head_desc = &desc_set[1];
+    struct pollfd *tail_desc = &desc_set[2];
     stdin_desc->fd = fileno(stdin); // stdin (cliente)
     stdin_desc->events = POLLIN;
-    rtree_desc->fd = tail->sockfd; // ligação com o servidor
-    rtree_desc->events = POLLIN;
+    head_desc->fd = head->sockfd; // ligação com o servidor HEAD
+    head_desc->events = POLLIN;
+    tail_desc->fd = tail->sockfd; // ligação com o servidor TAIL
+    tail_desc->events = POLLIN;
 
     // esperamos por input do cliente, ou fecho do servidor
-    while (poll(desc_set, 2, -1) > 0)
+    while (poll(desc_set, sizeof(desc_set) / sizeof(struct pollfd), -1) > 0)
     {
-        if (rtree_desc->revents & POLLHUP)
+        if (tail_desc->revents & POLLHUP)
         {
             printf("O servidor terminou a ligação.\n");
             break;
         }
-        if (rtree_desc->revents & POLLIN) // recebemos mensagem do servidor
+        if (tail_desc->revents & POLLIN) // recebemos mensagem do servidor
         {
-            if (available_read_bytes(rtree_desc->fd) == 0) // 0 bytes para ler
+            if (available_read_bytes(tail_desc->fd) == 0) // 0 bytes para ler
             {
                 printf("O servidor terminou a ligação.\n");
                 break;
