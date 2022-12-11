@@ -22,8 +22,6 @@
 #include <unistd.h>
 #include <zookeeper/zookeeper.h>
 
-typedef struct String_vector zoo_string;
-
 #define PATH_BUF_LEN 32
 #define ZOO_DATA_LEN 32
 
@@ -53,63 +51,6 @@ pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t op_proc_lock = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t tree_lock = PTHREAD_MUTEX_INITIALIZER;
-
-int compare_fn(const void *a, const void *b)
-{
-    return strcmp(*(const char **)a, *(const char **)b);
-}
-
-void update_next_server(zoo_string *children_list)
-{
-    int buf_len = ZOO_DATA_LEN;
-    char *candidate_id = NULL;
-    char candidate_path[PATH_BUF_LEN];
-    char address_port[ZOO_DATA_LEN];
-
-    if (candidate_path == NULL)
-    {
-        perror("update_next_server");
-        return;
-    }
-    qsort(children_list->data, children_list->count, sizeof(char *), compare_fn);
-
-    for (int i = 0; i < children_list->count; i++)
-    {
-        if (strcmp(children_list->data[i], znode_id) > 0)
-        {
-            candidate_id = children_list->data[i];
-            break;
-        }
-    }
-
-    if (candidate_id != NULL)
-    {
-        if (next_server != NULL)
-        {
-            if (strcmp(candidate_id, next_server->znode_id) == 0) // next_server mantém-se
-                return;
-            else
-                rtree_disconnect(next_server);
-        }
-
-        sprintf(candidate_path, "%s/%s", root_path, candidate_id);
-        if (ZOK != zoo_get(zh, candidate_path, 0, address_port, &buf_len, NULL))
-        {
-            fprintf(stderr, "update_next_server: Error getting data at '%s'.\n", candidate_path);
-        }
-        else
-        {
-            usleep(500000);
-            next_server = rtree_connect(address_port);
-            next_server->znode_id = strdup(candidate_id);
-        }
-    }
-    else if (next_server != NULL) // este server passa a ser TAIL
-    {
-        rtree_disconnect(next_server);
-        next_server = NULL;
-    }
-}
 
 static void child_watcher(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx)
 {
@@ -642,4 +583,61 @@ int tree_skel_zookeeper_init(const char *zk_address_port, short port)
     child_watcher(zh, ZOO_CHILD_EVENT, ZOO_CONNECTED_STATE, root_path, w_context);
 
     return 0;
+}
+
+int compare_fn(const void *a, const void *b)
+{
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+void update_next_server(zoo_string *children_list)
+{
+    int buf_len = ZOO_DATA_LEN;
+    char *candidate_id = NULL;
+    char candidate_path[PATH_BUF_LEN];
+    char address_port[ZOO_DATA_LEN];
+
+    if (candidate_path == NULL)
+    {
+        perror("update_next_server");
+        return;
+    }
+    qsort(children_list->data, children_list->count, sizeof(char *), compare_fn);
+
+    for (int i = 0; i < children_list->count; i++)
+    {
+        if (strcmp(children_list->data[i], znode_id) > 0)
+        {
+            candidate_id = children_list->data[i];
+            break;
+        }
+    }
+
+    if (candidate_id != NULL)
+    {
+        if (next_server != NULL)
+        {
+            if (strcmp(candidate_id, next_server->znode_id) == 0) // next_server mantém-se
+                return;
+            else
+                rtree_disconnect(next_server);
+        }
+
+        sprintf(candidate_path, "%s/%s", root_path, candidate_id);
+        if (ZOK != zoo_get(zh, candidate_path, 0, address_port, &buf_len, NULL))
+        {
+            fprintf(stderr, "update_next_server: Error getting data at '%s'.\n", candidate_path);
+        }
+        else
+        {
+            usleep(500000);
+            next_server = rtree_connect(address_port);
+            next_server->znode_id = strdup(candidate_id);
+        }
+    }
+    else if (next_server != NULL) // este server passa a ser TAIL
+    {
+        rtree_disconnect(next_server);
+        next_server = NULL;
+    }
 }

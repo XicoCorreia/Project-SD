@@ -22,8 +22,6 @@
 #define ZOO_DATA_LEN 32
 #define OP_MAX_ATTEMPTS 3
 
-typedef struct String_vector zoo_string;
-
 static const int TIMEOUT = 3000; // in ms
 static const char root_path[] = "/chain";
 static char w_context[] = "Head/Tail Server Watcher";
@@ -33,96 +31,6 @@ static struct rtree_t *head;
 static struct rtree_t *tail;
 
 static char *line;
-
-int compare_fn(const void *a, const void *b)
-{
-    return strcmp(*(const char **)a, *(const char **)b);
-}
-
-int tail_verify(int op_n)
-{
-
-    for (int i = 1; i < 4; i++)
-    {
-        if (rtree_verify(tail, op_n) == OP_SUCCESSFUL)
-        {
-            return OP_SUCCESSFUL;
-        }
-
-        usleep(i * 250000); // espera i * 250ms
-    }
-    return -1;
-}
-
-void update_head_tail(zoo_string *children_list)
-{
-    if (children_list->count == 0)
-    {
-        return; // ! Sem servidores mas "/chain" existe
-    }
-    int buf_len = ZOO_DATA_LEN;
-    char address_port[PATH_BUF_LEN];
-    char head_path[PATH_BUF_LEN];
-    char head_host[ZOO_DATA_LEN];
-    char tail_path[PATH_BUF_LEN];
-    char tail_host[ZOO_DATA_LEN];
-
-    qsort(children_list->data, children_list->count, sizeof(char *), compare_fn);
-
-    if (head != NULL)
-    {
-        sprintf(head_host, "%s:%d", head->address, head->port);
-    }
-
-    if (tail != NULL)
-    {
-        sprintf(tail_host, "%s:%d", tail->address, tail->port);
-    }
-
-    sprintf(head_path, "%s/%s", root_path, children_list->data[0]);
-    sprintf(tail_path, "%s/%s", root_path, children_list->data[children_list->count - 1]);
-
-    if (ZOK != zoo_get(zh, head_path, 0, address_port, &buf_len, NULL))
-    {
-        fprintf(stderr, "update_head_tail: Error getting data at '%s'.\n", head_path);
-        return;
-    }
-    if (address_port != NULL)
-    {
-        if (head != NULL && strcmp(head->znode_id, head_path) != 0)
-        {
-            rtree_disconnect(head); // ! verificar erros
-            head = NULL;
-        }
-        if (head == NULL)
-        {
-            head = rtree_connect(address_port);
-            head->znode_id = strdup(head_path);
-        }
-    }
-
-    memset(address_port, 0, buf_len);
-    buf_len = ZOO_DATA_LEN;
-
-    if (ZOK != zoo_get(zh, tail_path, 0, address_port, &buf_len, NULL))
-    {
-        fprintf(stderr, "update_head_tail: Error getting data at '%s'.\n", tail_path);
-        return;
-    }
-    if (address_port != NULL)
-    {
-        if (tail != NULL && strcmp(tail->znode_id, tail_path) != 0)
-        {
-            rtree_disconnect(tail); // ! verificar erros
-            tail = NULL;
-        }
-        if (tail == NULL)
-        {
-            tail = rtree_connect(address_port);
-            tail->znode_id = strdup(tail_path);
-        }
-    }
-}
 
 static void child_watcher(zhandle_t *wzh, int type, int state, const char *zpath, void *watcher_ctx)
 {
@@ -474,4 +382,93 @@ void tree_client_exit()
     }
     free(line);
     exit(status);
+}
+
+int tail_verify(int op_n)
+{
+    for (int i = 1; i < 4; i++)
+    {
+        if (rtree_verify(tail, op_n) == OP_SUCCESSFUL)
+        {
+            return OP_SUCCESSFUL;
+        }
+
+        usleep(i * 250000); // espera i * 250ms
+    }
+    return -1;
+}
+
+int compare_fn(const void *a, const void *b)
+{
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+void update_head_tail(zoo_string *children_list)
+{
+    if (children_list->count == 0)
+    {
+        return; // ! Sem servidores mas "/chain" existe
+    }
+    int buf_len = ZOO_DATA_LEN;
+    char address_port[PATH_BUF_LEN];
+    char head_path[PATH_BUF_LEN];
+    char head_host[ZOO_DATA_LEN];
+    char tail_path[PATH_BUF_LEN];
+    char tail_host[ZOO_DATA_LEN];
+
+    qsort(children_list->data, children_list->count, sizeof(char *), compare_fn);
+
+    if (head != NULL)
+    {
+        sprintf(head_host, "%s:%d", head->address, head->port);
+    }
+
+    if (tail != NULL)
+    {
+        sprintf(tail_host, "%s:%d", tail->address, tail->port);
+    }
+
+    sprintf(head_path, "%s/%s", root_path, children_list->data[0]);
+    sprintf(tail_path, "%s/%s", root_path, children_list->data[children_list->count - 1]);
+
+    if (ZOK != zoo_get(zh, head_path, 0, address_port, &buf_len, NULL))
+    {
+        fprintf(stderr, "update_head_tail: Error getting data at '%s'.\n", head_path);
+        return;
+    }
+    if (address_port != NULL)
+    {
+        if (head != NULL && strcmp(head->znode_id, head_path) != 0)
+        {
+            rtree_disconnect(head); // ! verificar erros
+            head = NULL;
+        }
+        if (head == NULL)
+        {
+            head = rtree_connect(address_port);
+            head->znode_id = strdup(head_path);
+        }
+    }
+
+    memset(address_port, 0, buf_len);
+    buf_len = ZOO_DATA_LEN;
+
+    if (ZOK != zoo_get(zh, tail_path, 0, address_port, &buf_len, NULL))
+    {
+        fprintf(stderr, "update_head_tail: Error getting data at '%s'.\n", tail_path);
+        return;
+    }
+    if (address_port != NULL)
+    {
+        if (tail != NULL && strcmp(tail->znode_id, tail_path) != 0)
+        {
+            rtree_disconnect(tail); // ! verificar erros
+            tail = NULL;
+        }
+        if (tail == NULL)
+        {
+            tail = rtree_connect(address_port);
+            tail->znode_id = strdup(tail_path);
+        }
+    }
 }

@@ -2,9 +2,24 @@
 #define _TREE_SKEL_PRIVATE_H
 
 #include "tree_skel.h"
+#include <zookeeper/zookeeper.h>
 
 #define OP_DEL 0
 #define OP_PUT 1
+
+typedef struct String_vector zoo_string;
+
+/**
+ * Função wrapper que usa strcmp
+ * para comparar termos no qsort.
+ */
+int compare_fn(const void *a, const void *b);
+
+/**
+ * Função chamada por child_watcher que atualiza o servidor seguinte
+ * na cadeia para este servidor.
+ */
+void update_next_server(zoo_string *children_list);
 
 /* Acrescenta um pedido (de escrita) à fila de pedidos.
  * O pedido será processado por uma thread secundária.
