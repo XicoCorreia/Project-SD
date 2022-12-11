@@ -62,7 +62,7 @@ int network_connect(struct rtree_t *rtree)
     // Timeout para estabelecer ligação com servidor (sobretudo servidor -> servidor)
     for (int i = 0; i < TIMEOUT * 10; i++)
     {
-        if (poll(desc_set, 1, 100) == 0)
+        if (poll(desc_set, 1, 100) > 0)
         {
             printf("Ligação estabelecida com o servidor '%s:%d'\n", rtree->address, rtree->port);
             status = 0;
