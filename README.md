@@ -46,6 +46,9 @@ Como alternativa pode ser usado o alvo `make withtree`.
 
 ### Notas: Ligação entre o cliente e o servidor
 
+*Nesta parte do projeto, o cliente não verifica se foi encerrada a ligação
+por parte do servidor através de 'poll'.*
+
 Para terminar a execução de forma segura pode ser enviado o sinal SIGINT (e.g. CTRL+C).
 Tipicamente os clientes encerram graciosamente quando detetam que o servidor encerrou.
 

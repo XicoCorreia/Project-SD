@@ -22,7 +22,7 @@
 #define ZOO_DATA_LEN 32
 #define OP_MAX_ATTEMPTS 3
 
-static const int TIMEOUT = 3000; // in ms
+static const int TIMEOUT = 3000; // em ms
 static const char root_path[] = "/chain";
 static char w_context[] = "Head/Tail Server Watcher";
 static zhandle_t *zh;
@@ -105,20 +105,6 @@ int main(int argc, char const *argv[])
     // esperamos por input do cliente, ou fecho do servidor
     while (poll(desc_set, sizeof(desc_set) / sizeof(struct pollfd), -1) > 0)
     {
-        if (tail_desc->revents & POLLHUP)
-        {
-            printf("O servidor terminou a ligação.\n");
-            break;
-        }
-        if (tail_desc->revents & POLLIN) // recebemos mensagem do servidor
-        {
-            if (available_read_bytes(tail_desc->fd) == 0) // 0 bytes para ler
-            {
-                printf("O servidor terminou a ligação.\n");
-                break;
-            }
-        }
-
         if ((stdin_desc->revents & POLLIN) == 0)
         {
             continue;
@@ -440,7 +426,7 @@ void update_head_tail(zoo_string *children_list)
     {
         if (head != NULL && strcmp(head->znode_id, head_path) != 0)
         {
-            rtree_disconnect(head); // ! verificar erros
+            rtree_disconnect(head);
             head = NULL;
         }
         if (head == NULL)
@@ -462,7 +448,7 @@ void update_head_tail(zoo_string *children_list)
     {
         if (tail != NULL && strcmp(tail->znode_id, tail_path) != 0)
         {
-            rtree_disconnect(tail); // ! verificar erros
+            rtree_disconnect(tail);
             tail = NULL;
         }
         if (tail == NULL)
