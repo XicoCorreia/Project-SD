@@ -7,7 +7,7 @@
             "program": "${workspaceFolder}/binary/tree-server",
             "args": [
                 "45682",
-                "5"
+                "127.0.0.1:2181"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -34,7 +34,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/binary/tree-client",
             "args": [
-                "127.0.0.1:45682"
+                "127.0.0.1:2181"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
